@@ -103,6 +103,15 @@ export const _parseTagsMapData: Record<string, [ string, ETagFuncName ]> = {
 		'msgParamColor',
 		ETagFuncName.STRING
 	],
+	'msg-param-community-gift-id': [
+		'msgParamCommunityGiftId',
+		ETagFuncName.STRING
+	],
+	// "350" -> 350
+	'msg-param-copoReward': [
+		'msgParamCopoReward',
+		ETagFuncName.NUMBER
+	],
 	'msg-param-cumulative-months': [
 		'msgParamCumulativeMonths',
 		ETagFuncName.NUMBER
@@ -229,6 +238,14 @@ export const _parseTagsMapData: Record<string, [ string, ETagFuncName ]> = {
 		'msgParamSenderCount',
 		ETagFuncName.NUMBER
 	],
+	'msg-param-sender-login': [
+		'msgParamSenderLogin',
+		ETagFuncName.STRING
+	],
+	'msg-param-sender-name': [
+		'msgParamSenderName',
+		ETagFuncName.STRING
+	],
 	'msg-param-should-share-streak': [
 		'msgParamShouldShareStreak',
 		ETagFuncName.BOOLEAN_NUMBER
@@ -314,8 +331,16 @@ export const _parseTagsMapData: Record<string, [ string, ETagFuncName ]> = {
 		'replyParentUserLogin',
 		ETagFuncName.STRING
 	],
+	'reply-thread-parent-display-name': [
+		'replyThreadParentDisplayName',
+		ETagFuncName.STRING
+	],
 	'reply-thread-parent-msg-id': [
 		'replyThreadParentMsgId',
+		ETagFuncName.STRING
+	],
+	'reply-thread-parent-user-id': [
+		'replyThreadParentUserId',
 		ETagFuncName.STRING
 	],
 	'reply-thread-parent-user-login': [
