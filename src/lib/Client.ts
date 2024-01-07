@@ -288,6 +288,12 @@ export class Client extends EventEmitter<ClientEvents> {
 				this.onCommand_CLEARCHAT(message as CLEARCHAT.Message);
 				break;
 			}
+			case 'RECONNECT': {
+				this.log?.info('Received RECONNECT command');
+				this.disconnect();
+				this.connect();
+				break;
+			}
 			case '001': {
 				this.log?.info('Connected to IRC');
 				this.identity.nick = message.params[0];
