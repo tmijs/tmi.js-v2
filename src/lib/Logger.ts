@@ -21,7 +21,6 @@ export class Logger {
 
 	private level: number = LogLevel.Error;
 
-	// TODO: Possibly add "@version" to the prefix as part of the build process
 	private prefix: string = `tmi.js@${process.env.npm_package_version}`;
 
 	constructor(level?: LogLevel) {

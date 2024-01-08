@@ -30,7 +30,7 @@ export interface Badges<Data = BadgesData> extends Map<keyof Data, unknown> {
  */
 export type BadgesInfo = Badges<BadgesInfoData>;
 
-type ChatColor = '' | `#${string}`;
+export type ChatColor = '' | `#${string}`;
 type EmoteSets = string[];
 type UserType = '';
 
@@ -165,7 +165,7 @@ export namespace NOTICE {
 	export interface Message extends IrcMessage<'NOTICE', TagsData> {
 		channel: ChannelString;
 		prefix: PrefixFull;
-		params: [];
+		params: string[];
 	}
 }
 

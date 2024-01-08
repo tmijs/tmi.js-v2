@@ -2,26 +2,41 @@
   "name": "tmi.js",
   "version": "2.0.0",
   "description": "",
-  "main": "dist/index.js",
   "type": "module",
+  "main": "./dist/node.mjs",
+  "browser": "./dist/browser.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/node.mjs",
+      "require": "./dist/node.cjs",
+      "default": "./dist/node.cjs"
+    }
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --trace-warnings --loader tsx/esm src/test.ts"
+    "start": "node --trace-warnings --loader tsx/esm src/test.ts",
+    "build": "node scripts/esbuild.js && tsc"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "eventemitter3": "^5.0.0",
+    "eventemitter3": "^5.0.1",
     "isomorphic-ws": "^5.0.0",
-    "ws": "^8.14.2"
+    "ws": "^8.16.0"
   },
   "devDependencies": {
-    "@types/node": "^18.18.3",
-    "@types/ws": "^8.5.6",
-    "esbuild": "^0.19.4",
+    "@types/node": "^18.19.5",
+    "@types/ws": "^8.5.10",
+    "esbuild": "^0.19.11",
+    "esbuild-plugin-replace": "^1.4.0",
     "tslib": "^2.6.2",
-    "tsx": "^3.13.0",
-    "typescript": "^5.2.2"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }
