@@ -208,6 +208,8 @@ export namespace PRIVMSG {
 		replyParentUserLogin: string;
 		replyThreadParentMsgId: string;
 		replyThreadParentUserLogin: string;
+		replyThreadParentDisplayName: string;
+		replyThreadParentUserId: string;
 	}
 	interface TagsData_Cheer extends TagsData {
 		bits: number;
@@ -297,7 +299,9 @@ export namespace PRIVMSG {
 		thread: {
 			id: TagsData_Reply['replyThreadParentMsgId'];
 			user: {
+				id: TagsData_Reply['replyThreadParentUserId'];
 				name: TagsData_Reply['replyThreadParentUserLogin'];
+				displayName: TagsData_Reply['replyThreadParentDisplayName'];
 			};
 		};
 	}

@@ -527,7 +527,6 @@ export class Client extends EventEmitter<ClientEvents> {
 		if(isAction) {
 			text = text.slice(8, -1);
 		}
-		const isCustomReward = 'customRewardId' in tags && tags.customRewardId !== '';
 		const user: PRIVMSG.Event_Message['user'] = {
 			id: tags.userId,
 			name: prefix.nick,
@@ -570,7 +569,9 @@ export class Client extends EventEmitter<ClientEvents> {
 				thread: {
 					id: tags.replyThreadParentMsgId,
 					user: {
-						name: tags.replyThreadParentUserLogin
+						id: tags.replyThreadParentUserId,
+						name: tags.replyThreadParentUserLogin,
+						displayName: tags.replyThreadParentDisplayName,
 					}
 				}
 			};
@@ -608,6 +609,7 @@ export class Client extends EventEmitter<ClientEvents> {
 		}
 		let reward: PRIVMSG.Event_Message['reward'] | undefined;
 		const isReward = hasMsgId && (tags.msgId === 'highlighted-message' || tags.msgId === 'skip-subs-mode-message');
+		const isCustomReward = 'customRewardId' in tags && tags.customRewardId !== '';
 		if(isCustomReward) {
 			reward = { type: 'custom', id: tags.customRewardId };
 		}
