@@ -194,7 +194,7 @@ export class Client extends EventEmitter<ClientEvents> {
 	}
 
 	private queuedEmit<T extends keyof ClientEvents>(event: T, ...args: ClientEvents[T]): void {
-		setImmediate(() => this.emit(event, ...(args as any)));
+		queueMicrotask(() => this.emit(event, ...(args as any)));
 	}
 
 	private onSocketOpen: (() => Promise<void>) = async () => {
