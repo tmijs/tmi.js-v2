@@ -199,6 +199,7 @@ export namespace PRIVMSG {
 		turbo: boolean;
 		userId: string;
 		userType: UserType;
+		vip: boolean;
 	}
 	interface TagsData_Reply extends TagsData {
 		replyParentDisplayName: string;
@@ -259,6 +260,7 @@ export namespace PRIVMSG {
 		badgeInfo: TagsData['badgeInfo'];
 
 		isMod: TagsData['mod'];
+		isVip: TagsData['vip'];
 		isSubscriber: TagsData['subscriber'];
 		isFounder: boolean; // founder in badges
 		type: TagsData['userType'];

@@ -540,6 +540,7 @@ export class Client extends EventEmitter<ClientEvents> {
 			isMod: tags.mod,
 			isSubscriber: tags.subscriber,
 			isFounder: tags.badges.has('founder'),
+			isVip: tags.vip,
 			type: tags.userType,
 
 			isReturningChatter: tags.returningChatter
