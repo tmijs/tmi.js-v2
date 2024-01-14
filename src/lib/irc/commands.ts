@@ -215,14 +215,6 @@ export namespace PRIVMSG {
 	interface TagsData_Cheer extends TagsData {
 		bits: number;
 	}
-	interface TagsData_PinnedPaid extends TagsData {
-		pinnedChatPaidAmount: number;
-		pinnedChatPaidCanonicalAmount: number;
-		pinnedChatPaidCurrency: string;
-		pinnedChatPaidExponent: number;
-		pinnedChatPaidLevel: 'ONE' | 'TWO' | 'THREE' | 'FOUR' | 'FIVE' | 'SIX' | 'SEVEN' | 'EIGHT' | 'NINE' | 'TEN';
-		pinnedChatPaidIsSystemMessage: boolean;
-	}
 	interface TagsData_Introduction extends TagsData {
 		msgId: 'user-intro';
 	}
@@ -244,7 +236,7 @@ export namespace PRIVMSG {
 
 	////////////////////////////////////////////////////////////////////////////
 
-	export interface Message extends IrcMessage<'PRIVMSG', TagsData | TagsData_Reply | TagsData_Cheer | TagsData_PinnedPaid | TagsData_Introduction | TagsData_Reward_Custom | TagsData_Reward_Highlighted | TagsData_Reward_SkipSubsMode | TagsData_AutomodAccepted> {
+	export interface Message extends IrcMessage<'PRIVMSG', TagsData | TagsData_Reply | TagsData_Cheer | TagsData_Introduction | TagsData_Reward_Custom | TagsData_Reward_Highlighted | TagsData_Reward_SkipSubsMode | TagsData_AutomodAccepted> {
 		channel: ChannelString;
 		prefix: PrefixFull;
 		params: [ string ];
@@ -281,7 +273,6 @@ export namespace PRIVMSG {
 			wasAcceptedAfterAutomod: boolean; // msg-id= and custom-reward-id=
 		};
 		cheer?: Cheer; // tags bits
-		pinned?: PinnedPaid; // tags has pinned-chat-paid-amount
 		parent?: ReplyParent; // tags has reply-parent-msg-id
 		reward?: Reward_Custom | Reward_HighlightedMessage | Reward_SkipSubsModeMessage;
 		tags: Tags;
@@ -309,17 +300,6 @@ export namespace PRIVMSG {
 	}
 	export interface Cheer {
 		bits: TagsData_Cheer['bits'];
-	}
-	export interface PinnedPaid {
-		type: 'paid';
-		amount: TagsData_PinnedPaid['pinnedChatPaidAmount'];
-		amountCanonical: TagsData_PinnedPaid['pinnedChatPaidCanonicalAmount'];
-		currency: TagsData_PinnedPaid['pinnedChatPaidCurrency'];
-		exponent: TagsData_PinnedPaid['pinnedChatPaidExponent'];
-		getComputedAmount: () => number;
-		getFormattedAmount: (opts?: Omit<Intl.NumberFormatOptions, 'currency' | 'style'>) => string;
-		level: TagsData_PinnedPaid['pinnedChatPaidLevel'];
-		isSystemMessage: TagsData_PinnedPaid['pinnedChatPaidIsSystemMessage'];
 	}
 	interface Reward_HighlightedMessage {
 		type: 'highlighted-message';

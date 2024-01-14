@@ -282,31 +282,6 @@ export const _parseTagsMapData: Record<string, [ string, ETagFuncName ]> = {
 		'msgParamWasGifted',
 		ETagFuncName.LITERAL_BOOLEAN
 	],
-	'pinned-chat-paid-amount': [
-		'pinnedChatPaidAmount',
-		ETagFuncName.NUMBER
-	],
-	'pinned-chat-paid-canonical-amount': [
-		'pinnedChatPaidCanonicalAmount',
-		ETagFuncName.NUMBER
-	],
-	'pinned-chat-paid-currency': [
-		'pinnedChatPaidCurrency',
-		ETagFuncName.STRING
-	],
-	'pinned-chat-paid-exponent': [
-		'pinnedChatPaidExponent',
-		ETagFuncName.NUMBER
-	],
-	// 'ONE' | 'TWO' | 'THREE' | 'FOUR' | 'FIVE' | 'SIX' | 'SEVEN' | 'EIGHT' | 'NINE' | 'TEN'
-	'pinned-chat-paid-level': [
-		'pinnedChatPaidLevel',
-		ETagFuncName.STRING
-	],
-	'pinned-chat-paid-is-system-message': [
-		'pinnedChatPaidIsSystemMessage',
-		ETagFuncName.BOOLEAN_NUMBER
-	],
 	'r9k': [
 		'r9k',
 		ETagFuncName.BOOLEAN_NUMBER

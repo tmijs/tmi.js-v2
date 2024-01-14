@@ -582,32 +582,6 @@ export class Client extends EventEmitter<ClientEvents> {
 		if(isCheer) {
 			cheer = { bits: tags.bits };
 		}
-		const isPinnedPaid = 'pinnedChatPaidAmount' in tags;
-		let pinned: PRIVMSG.Event_Message['pinned'] | undefined;
-		if(isPinnedPaid) {
-			pinned = {
-				type: 'paid',
-				amount: tags.pinnedChatPaidAmount,
-				amountCanonical: tags.pinnedChatPaidCanonicalAmount,
-				currency: tags.pinnedChatPaidCurrency,
-				exponent: tags.pinnedChatPaidExponent,
-				getComputedAmount() {
-					// return this.amount / (10 ** this.exponent);
-					return this.amount / exponentLookup[this.exponent];
-				},
-				getFormattedAmount(opts) {
-					const value = this.getComputedAmount();
-					return value.toLocaleString(undefined, {
-						...opts,
-						currency: tags.pinnedChatPaidCurrency,
-						currencyDisplay: opts?.currencyDisplay ?? 'symbol',
-						style: 'currency'
-					});
-				},
-				level: tags.pinnedChatPaidLevel,
-				isSystemMessage: tags.pinnedChatPaidIsSystemMessage
-			};
-		}
 		let reward: PRIVMSG.Event_Message['reward'] | undefined;
 		const isReward = hasMsgId && (tags.msgId === 'highlighted-message' || tags.msgId === 'skip-subs-mode-message');
 		const isCustomReward = 'customRewardId' in tags && tags.customRewardId !== '';
@@ -618,7 +592,7 @@ export class Client extends EventEmitter<ClientEvents> {
 			reward = { type: tags.msgId };
 		}
 		this.emit('message', {
-			channel, user, message, parent, cheer, pinned, reward, tags,
+			channel, user, message, parent, cheer, reward, tags,
 			reply: text => this.reply(channelName, text, tags.id)
 		});
 	}
