@@ -6,7 +6,6 @@ import pkg from '../package.json' with { type: 'json' };
 import esbuildPkg from 'esbuild/package.json' with { type: 'json' };
 import os from 'node:os';
 
-const pv = (p, v) => `${p}@\x1b[41m${v}\x1b[0m`;
 console.table([
 	{ '': 'tmi.js', version: pkg.version },
 	{ '': 'esbuild', version: esbuildPkg.version },
@@ -14,13 +13,13 @@ console.table([
 	{ '': 'os', version: `${os.type()} ${os.release()}` },
 ]);
 
+const entryFile = 'src/index.ts';
+
 /**
  * @type {import('esbuild').BuildOptions}
  */
-const options_shared = {
+const optionsAll = {
 	bundle: true,
-	minify: true,
-	keepNames: true,
 	sourcemap: true,
 	sourcesContent: false,
 	target: 'es2022',
@@ -35,37 +34,77 @@ const options_shared = {
 		})
 	]
 };
+
 /**
  * @type {import('esbuild').BuildOptions}
  */
-const options_sharedESM = {
+const optionsEsm = {
 	format: 'esm',
 	outExtension: { '.js': '.mjs' },
 };
 
-const entryFile = 'src/index.ts';
+/**
+ * @type {import('esbuild').BuildOptions}
+ */
+const optionsGlobal = {
+	format: 'iife',
+	globalName: 'tmi',
+};
+
+/**
+ * @type {import('esbuild').BuildOptions}
+ */
+const optionsNode = {
+	platform: 'node',
+	entryPoints: { 'tmi.node': entryFile },
+	packages: 'external',
+	minifySyntax: true,
+	minifyIdentifiers: true,
+};
+
+/**
+ * @type {import('esbuild').BuildOptions}
+ */
+const optionsBrowser = {
+	platform: 'browser',
+};
 
 /**
  * @type {Record<string, import('esbuild').BuildOptions>}
  */
 const optionsList = {
 	node_esm: {
-		platform: 'node',
-		entryPoints: { 'node': entryFile },
-		packages: 'external',
-		...options_sharedESM
+		...optionsEsm,
+		...optionsNode
 	},
 	node_cjs: {
-		platform: 'node',
-		entryPoints: { 'node': entryFile },
 		outExtension: { '.js': '.cjs' },
-		packages: 'external',
 		format: 'cjs',
+		...optionsNode
 	},
 	browser_esm: {
-		platform: 'browser',
-		entryPoints: { 'browser': entryFile },
-		...options_sharedESM
+		entryPoints: { 'tmi.esm-browser': entryFile },
+		...optionsBrowser,
+		...optionsEsm
+	},
+	browser_esm_min: {
+		entryPoints: { 'tmi.esm-browser.min': entryFile },
+		minify: true,
+		...optionsBrowser,
+		...optionsEsm
+	},
+	browser_global: {
+		entryPoints: { 'tmi.global-browser': entryFile },
+		format: 'iife',
+		...optionsBrowser,
+		...optionsGlobal
+	},
+	browser_global_min: {
+		entryPoints: { 'tmi.global-browser.min': entryFile },
+		format: 'iife',
+		minify: true,
+		...optionsBrowser,
+		...optionsGlobal
 	},
 };
 
@@ -89,7 +128,7 @@ else {
 async function makeBuild(name, options) {
 	const logLine = `- ${name}`;
 	console.time(logLine);
-	await build({ ...options_shared, ...options });
+	await build({ ...optionsAll, ...options });
 	console.timeEnd(logLine);
 }
 

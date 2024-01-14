@@ -510,13 +510,17 @@ export namespace USERNOTICE {
 				type: TagsData['userType'];
 			};
 			message: {
+				id: TagsData['id'];
 				system: TagsData['systemMsg'];
 				user: Message['params'][0];
-				// TODO: Can the user message be an action? (/me)
-				// isAction: boolean;
 				flags: TagsData['flags'];
 				emotes: TagsData['emotes'];
-				id: TagsData['id'];
+				// TODO: Can the user message be an action? (/me)
+				// isAction: boolean;
+				// TODO: Can the message be a user's first message?
+				// isFirstMessageByUser: boolean;
+				// TODO: Can the message be automodded?
+				// wasAcceptedAfterAutomod: boolean;
 			};
 			subscription: {
 				cumulativeMonths: TagsData['msgParamCumulativeMonths'];
