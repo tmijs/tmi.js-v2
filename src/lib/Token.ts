@@ -33,6 +33,7 @@ export class Token {
 	[Symbol.for('nodejs.util.inspect.custom')](_depth: number, options: any, inspect: (value: any, options: any) => string) {
 		return inspect(<typeof this>{
 			value: typeof this.value === 'string' ? '***tmi.js-censored***' : undefined,
+			isAnonymous: this.isAnonymous,
 			clientId: this.clientId,
 			scopes: this.scopes,
 			login: this.login,
