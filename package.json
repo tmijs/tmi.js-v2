@@ -3,15 +3,15 @@
   "version": "2.0.0",
   "description": "",
   "type": "module",
-  "main": "./dist/node.mjs",
-  "browser": "./dist/browser.mjs",
+  "main": "./dist/tmi.node.mjs",
+  "browser": "./dist/tmi.esm-browser.min.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/node.mjs",
-      "require": "./dist/node.cjs",
-      "default": "./dist/node.cjs"
+      "types": "./dist/tmi.index.d.ts",
+      "import": "./dist/tmi.node.mjs",
+      "require": "./dist/tmi.node.cjs",
+      "default": "./dist/tmi.node.cjs"
     }
   },
   "scripts": {
