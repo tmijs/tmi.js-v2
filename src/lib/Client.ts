@@ -742,7 +742,7 @@ export class Client extends EventEmitter<ClientEvents> {
 	 * Send a message to a channel. The channel name will be normalized. Messages must be <= 500 characters in length.
 	 * Cannot send messages if the client is logged in anonymously.
 	 */
-	async say(channelName: string | Channel, message: string, tags: Record<string, string> = {}, { isReply = false } = {}): Promise<SayReturnValue> {
+	async say(channelName: string | Channel, message: string, tags: Record<string, string | number> = {}, { isReply = false } = {}): Promise<SayReturnValue> {
 		if(this.identity.isAnonymous) {
 			throw new Error('Cannot send messages as anonymous');
 		}
@@ -756,6 +756,7 @@ export class Client extends EventEmitter<ClientEvents> {
 		channelName = Channel.normalizeName(channelName);
 		// TODO: Pick a sufficiently random nonce
 		const nonce = Math.random().toString(36).slice(2);
+		// TODO: Add the authorized user ID to the nonce
 		const fullNonce = <const>`tmi.js_${nonce}`;
 		tags['client-nonce'] = fullNonce;
 		const tagsString = Object.entries(tags).map(([ key, value ]) => `${escapeIrc(key)}=${escapeIrc(value)}`).join(';');

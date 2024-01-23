@@ -24,7 +24,10 @@ export function unescapeIrc(value: string) {
 	return value.replace(/\\[snr;\\]/g, match => ircEscapedChars[match[1] as keyof typeof ircEscapedChars]);
 }
 
-export function escapeIrc(value: string) {
+export function escapeIrc(value: string | number) {
+	if(typeof value === 'number') {
+		value = value.toString();
+	}
 	return value.replace(/[\s\n\r;\\]/g, match => '\\' + ircUnescapedChars[match as keyof typeof ircUnescapedChars] || match);
 }
 
