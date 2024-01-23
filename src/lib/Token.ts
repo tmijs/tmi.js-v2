@@ -1,10 +1,8 @@
-import { TokenScopes } from './helix/Helix';
-
 interface ValidateTokenBody {
 	client_id: string;
 	expires_in: number;
 	login: string;
-	scopes: TokenScopes[];
+	scopes: string[];
 	user_id: string;
 }
 
