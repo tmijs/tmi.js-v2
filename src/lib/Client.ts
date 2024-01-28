@@ -55,6 +55,11 @@ type ClientEvents = {
 
 	part: [ event: PART.Event ];
 	roomState: [ event: ROOMSTATE.Event ];
+	emoteOnly: [ event: ROOMSTATE.Event_EmoteOnly ];
+	followersOnly: [ event: ROOMSTATE.Event_FollowersOnly ];
+	uniqueMode: [ event: ROOMSTATE.Event_UniqueMode ];
+	slowMode: [ event: ROOMSTATE.Event_SlowMode ];
+	subsOnly: [ event: ROOMSTATE.Event_SubsOnly ];
 
 	message: [ event: PRIVMSG.Event ];
 
@@ -425,15 +430,55 @@ export class Client extends EventEmitter<ClientEvents> {
 		this.emit('USERSTATE', e);
 	}
 	private onCommand_ROOMSTATE(e: ROOMSTATE.Message) {
+		type E = ROOMSTATE.Event;
 		const channel = this.getChannel(e);
+		const isInitial = !channel.roomState;
 		channel.isJoined = true;
 		channel.id = e.tags.roomId;
-		channel.roomState = e.tags;
+		channel.roomState = Object.assign(channel.roomState ?? {}, e.tags);
+		const change: E['change'] = { ...e.tags };
+		if('roomId' in change) {
+			delete change.roomId;
+		}
 		this.emit('ROOMSTATE', e);
-		this.emit('roomState', {
-			channel,
-			roomState: e.tags
-		});
+		this.emit('roomState', { channel, state: channel.roomState, isInitial, change });
+		if(!isInitial) {
+			if(change.emoteOnly !== undefined) {
+				this.emit('emoteOnly', {
+					channel,
+					state: change.emoteOnly,
+					isEnabled: change.emoteOnly
+				});
+			}
+			if(change.followersOnly !== undefined) {
+				this.emit('followersOnly', {
+					channel,
+					state: change.followersOnly,
+					isEnabled: change.followersOnly !== -1
+				});
+			}
+			if(change.r9k !== undefined) {
+				this.emit('uniqueMode', {
+					channel,
+					state: change.r9k,
+					isEnabled: change.r9k
+				});
+			}
+			if(change.slow !== undefined) {
+				this.emit('slowMode', {
+					channel,
+					state: change.slow,
+					isEnabled: change.slow !== 0
+				});
+			}
+			if(change.subsOnly !== undefined) {
+				this.emit('subsOnly', {
+					channel,
+					state: change.subsOnly,
+					isEnabled: change.subsOnly
+				});
+			}
+		}
 	}
 	private onCommand_JOIN(e: JOIN.Message) {
 		this.emit('JOIN', e);

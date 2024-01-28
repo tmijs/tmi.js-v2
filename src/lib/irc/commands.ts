@@ -88,31 +88,31 @@ export namespace ROOMSTATE {
 		/**
 		 * Determines whether the chat room allows only messages with emotes.
 		 */
-		emoteOnly?: boolean;
+		emoteOnly: boolean;
 		/**
 		 * Determines whether only followers can post messages in the chat room. The value indicates how long, in
 		 * minutes, the user must have followed the broadcaster before posting chat messages. A value of -1 indicates
 		 * that this setting is disabled.
 		 */
-		followersOnly?: number;
+		followersOnly: number;
 		/**
 		 * Determines whether a user's messages must be unique. Applies only to messages with more than 9 characters.
 		 */
-		r9k?: boolean;
+		r9k: boolean;
 		/**
 		 * The user ID of the broadcaster.
 		 */
-		roomId?: string;
+		roomId: string;
 		/**
 		 * Determines how long, in seconds, users must wait between sending
 		 * messages.
 		 */
-		slow?: number;
+		slow: number;
 		/**
 		 * Determines whether only subscribers and moderators can chat in the
 		 * chat room.
 		 */
-		subsOnly?: boolean;
+		subsOnly: boolean;
 	}
 	export interface Message extends IrcMessage<'ROOMSTATE', TagsData> {
 		channel: ChannelString;
@@ -121,7 +121,30 @@ export namespace ROOMSTATE {
 	}
 	export interface Event {
 		channel: Channel;
-		roomState: TagsData;
+		state: TagsData;
+		isInitial: boolean;
+		change: Partial<Omit<TagsData, 'roomId'>>;
+	}
+
+	export interface IndividualEvent {
+		channel: Channel;
+		isEnabled: boolean;
+	}
+
+	export interface Event_EmoteOnly extends IndividualEvent {
+		state: TagsData['emoteOnly'];
+	}
+	export interface Event_FollowersOnly extends IndividualEvent {
+		state: TagsData['followersOnly'];
+	}
+	export interface Event_UniqueMode extends IndividualEvent {
+		state: TagsData['r9k'];
+	}
+	export interface Event_SlowMode extends IndividualEvent {
+		state: TagsData['slow'];
+	}
+	export interface Event_SubsOnly extends IndividualEvent {
+		state: TagsData['subsOnly'];
 	}
 }
 
