@@ -35,6 +35,7 @@ type EmoteSets = string[];
 type UserType = '';
 
 export type SubPlan = '1000' | '2000' | '3000' | 'Prime';
+export type SubTier = 1 | 2 | 3;
 
 interface PrefixHostOnly {
 	nick: undefined;
@@ -402,16 +403,73 @@ export namespace USERNOTICE {
 		color: ChatColor;
 		displayName: string;
 		emotes: EmotesTag;
-		flags: [];
+		flags: MessageFlag[];
 		id: string;
 		login: string;
 		mod: boolean;
 		roomId: string;
-		subscriber: true;
+		subscriber: boolean;
 		tmiSentTs: number;
 		userId: string;
 		userType: UserType;
+		systemMsg: string;
 	}
+	export interface SimpleUser<ID = string, Name = string, DisplayName = string> {
+		id: ID;
+		name: Name;
+		displayName: DisplayName;
+	}
+	export interface SimpleUserMaybeAnonymous<ID = string, Name = string, DisplayName = string> extends SimpleUser<ID, Name, DisplayName> {
+		isAnonymous: boolean;
+	}
+	export interface User<TagsData extends SharedTagsData = SharedTagsData> {
+		id: TagsData['userId'];
+		name: TagsData['login'];
+		displayName: TagsData['displayName'];
+
+		color: TagsData['color'];
+
+		badges: TagsData['badges'];
+		badgeInfo: TagsData['badgeInfo'];
+
+		isMod: TagsData['mod'];
+		isSubscriber: TagsData['subscriber'];
+		type: TagsData['userType'];
+	}
+	export type UserMaybeAnonymous<TagsData extends SharedTagsData = SharedTagsData> = User<TagsData> & { isAnonymous: boolean; };
+	export interface SystemMessage {
+		id: SharedTagsData['id'];
+		system: SharedTagsData['systemMsg'];
+	}
+	// TODO: Can the user message be an action? (/me)
+	// isAction: boolean;
+	// TODO: Can the message be a user's first message?
+	// isFirstMessageByUser: boolean;
+	// TODO: Can the message be automodded?
+	// wasAcceptedAfterAutomod: boolean;
+	export interface UserMessage extends SystemMessage {
+		text: string;
+		emotes: SharedTagsData['emotes'];
+		flags: SharedTagsData['flags'];
+	}
+	export interface SubscriptionPlanFull {
+		name: string;
+		plan: SubPlan;
+		tier: SubTier;
+		isPrime: boolean;
+	};
+	export interface SubscriptionPlanNoName {
+		name: undefined;
+		plan: SubPlan;
+		tier: SubTier;
+		isPrime: boolean;
+	};
+	export interface SubscriptionPlanEmpty {
+		name: undefined;
+		plan: undefined;
+		tier: undefined;
+		isPrime: boolean;
+	};
 	export interface BaseMessage<TagsData extends TagsDataType> extends IrcMessage<'USERNOTICE', TagsData> {
 		channel: ChannelString;
 		prefix: PrefixHostOnly;
@@ -419,55 +477,40 @@ export namespace USERNOTICE {
 	export interface Message extends BaseMessage<SharedTagsData> {
 	}
 
+	// `${string} subscribed at Tier ${number}.`
+	// `${string} subscribed with Prime.`
 	export namespace MsgId_Sub {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'sub';
-			msgParamCumulativeMonths: number;
-			msgParamMonths: 0;
-			msgParamMultimonthDuration: number; // 1
-			msgParamMultimonthTenure: 0;
-			msgParamShouldShareStreak: false;
+			msgParamCumulativeMonths: 1; // Always 1
+			msgParamMonths: 0; // Always 0
+			msgParamMultimonthDuration: number; // 1, 3, 6, ?
+			msgParamMultimonthTenure: 0; // Always 0
+			msgParamShouldShareStreak: false; // Always false
 			msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
-			msgParamWasGifted: false;
-			// TODO: Get message
-			systemMsg: string;
+			msgParamWasGifted: false; // Always false
 		}
 		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
 			params: [ string ];
 		}
 		export interface Event {
 			channel: Channel;
-			user: {
-				id: TagsData['userId'];
-				name: TagsData['login'];
-				displayName: TagsData['displayName'];
-
-				color: TagsData['color'];
-
-				badges: TagsData['badges'];
-				badgeInfo: TagsData['badgeInfo'];
-
-				isMod: TagsData['mod'];
-				isSubscriber: TagsData['subscriber'];
-				type: TagsData['userType'];
-			};
-			message: {
-				system: TagsData['systemMsg'];
-			};
+			user: User;
+			message: SystemMessage;
 			subscription: {
-				plan: {
-					name: TagsData['msgParamSubPlanName'];
-					plan: TagsData['msgParamSubPlan'];
-					tier: 1 | 2 | 3;
-					isPrime: boolean;
-				};
+				plan: SubscriptionPlanFull;
 				multiMonth: {
 					duration: TagsData['msgParamMultimonthDuration'];
 				};
 			};
 		}
 	}
+
+	// `${string} subscribed at Tier ${number}. They've subscribed for ${number} months!`
+	// `${string} subscribed at Tier ${number}. They've subscribed for ${number} months, currently on a ${number} month streak!`
+	// `${string} subscribed with Prime. They've subscribed for ${number} months!`
+	// `${string} subscribed with Prime. They've subscribed for ${number} months, currently on a ${number} month streak!`
 	export namespace MsgId_Resub {
 		export interface TagsData extends SharedTagsData {
 			mod: boolean;
@@ -475,13 +518,14 @@ export namespace USERNOTICE {
 			msgParamAnonGift?: boolean;
 			msgParamCumulativeMonths: number;
 			msgParamGiftMonthBeingRedeemed?: number;
-			msgParamGiftMonths?: number;
+			msgParamGiftMonths?: number; // 6, 12
 			msgParamGifterId?: string;
 			msgParamGifterLogin?: string;
 			msgParamGifterName?: string;
+			// Always 0
 			msgParamMonths: 0;
-			msgParamMultimonthDuration: number; // 1
-			msgParamMultimonthTenure: number;
+			msgParamMultimonthDuration?: number; // 0, 1, 3
+			msgParamMultimonthTenure?: number; // 0
 			msgParamShouldShareStreak: boolean;
 			msgParamStreakMonths?: number;
 			msgParamSubPlanName: string;
@@ -495,115 +539,74 @@ export namespace USERNOTICE {
 		}
 		export interface Event {
 			channel: Channel;
-			user: {
-				id: TagsData['userId'];
-				name: TagsData['login'];
-				displayName: TagsData['displayName'];
-
-				color: TagsData['color'];
-
-				badges: TagsData['badges'];
-				badgeInfo: TagsData['badgeInfo'];
-
-				isMod: TagsData['mod'];
-				isSubscriber: TagsData['subscriber'];
-				type: TagsData['userType'];
-			};
-			message: {
-				id: TagsData['id'];
-				system: TagsData['systemMsg'];
-				user: Message['params'][0];
-				flags: TagsData['flags'];
-				emotes: TagsData['emotes'];
-				// TODO: Can the user message be an action? (/me)
-				// isAction: boolean;
-				// TODO: Can the message be a user's first message?
-				// isFirstMessageByUser: boolean;
-				// TODO: Can the message be automodded?
-				// wasAcceptedAfterAutomod: boolean;
-			};
+			user: User;
+			message: UserMessage;
 			subscription: {
 				cumulativeMonths: TagsData['msgParamCumulativeMonths'];
-				plan: {
-					tier: TagsData['msgParamSubPlan'];
-					name: TagsData['msgParamSubPlanName'];
-					isPrime: boolean;
-				};
+				plan: SubscriptionPlanFull;
 				multiMonth: {
 					duration: TagsData['msgParamMultimonthDuration'];
 					tenure: TagsData['msgParamMultimonthTenure'];
 				};
-				streak: {
-					shared: TagsData['msgParamShouldShareStreak'];
-					value: TagsData['msgParamStreakMonths'];
-				};
-				gift: {
-					state: false; // TagsData['msgParamWasGifted'];
-				} | {
-					state: true; // TagsData['msgParamWasGifted'];
+				streak?: {
+					months: NonNullable<TagsData['msgParamStreakMonths']>;
+				}
+				gift?: {
 					gifter: {
 						id: NonNullable<TagsData['msgParamGifterId']>;
 						name: NonNullable<TagsData['msgParamGifterLogin']>;
 						displayName: NonNullable<TagsData['msgParamGifterName']>;
-						anonymous: NonNullable<TagsData['msgParamAnonGift']>;
+						isAnonymous: NonNullable<TagsData['msgParamAnonGift']>;
 					};
 					// User is at month monthBeingRedeemed (1, 2, 3, ..., 11, 12) out of msgParamGiftMonths (3, 6, 12) months
-					monthBeingRedeemed: TagsData['msgParamGiftMonthBeingRedeemed'];
+					// Value can be 0 (at least in two cases of anonymous gifts, streak both ways. Two non-anonymous gifts had non-zero values)
+					monthBeingRedeemed: NonNullable<TagsData['msgParamGiftMonthBeingRedeemed']>;
 					months: NonNullable<TagsData['msgParamGiftMonths']>;
 				};
 			};
 		}
 	}
 
+	type GoalContributionType = 'SUB_POINTS' | 'SUBS' | 'NEW_SUB_POINTS' | 'NEW_SUBS';
+
 	// submysterygift
+	// `${string} is gifting ${number} Tier ${number} Subs to ${string}'s community! They've gifted a total of ${number} in the channel!`,
+	// `${string} is gifting ${number} Tier ${number} Subs to ${string}'s community!`,
+	// `An anonymous user is gifting ${number} Tier ${number} Subs to ${string}'s community!`
 	export namespace MsgId_SubMysteryGift {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'submysterygift';
+			msgParamCommunityGiftId: string;
+			// These may not be the only values
 			msgParamGiftTheme: 'showlove' | 'party' | 'lul' | 'biblethump';
 			// https://dev.twitch.tv/docs/api/reference/#get-creator-goals
-			msgParamGoalContributionType?: 'SUBS' | 'SUB_POINTS';
+			// The Helix API lists 5 types. 4 of them being sub related.
+			// "subscription", "subscription_count", "new_subscription", "new_subscription_count"
+			msgParamGoalContributionType?: GoalContributionType;
 			msgParamGoalCurrentContributions?: number;
+			// Description may be omitted if it would be otherwise empty. (User set value)
 			msgParamGoalDescription?: string;
 			msgParamGoalTargetContributions?: number;
 			msgParamGoalUserContributions?: number;
 			msgParamMassGiftCount: number;
 			msgParamOriginId: string;
+			// May be ommited if the user is anonymous
 			msgParamSenderCount: number;
-			msgParamSubPlanName: string;
+			// There is no msgParamSubPlanName for submysterygift
+			// msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
-			// TODO: "Subs" for 1?
-			// TODO: First time message?
-			// `${string} is gifting ${number} Tier ${number} Subs to ${string}'s community! They've gifted a total of ${number} in the channel!`
-			systemMsg: string;
 		}
 		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
 			params: [];
 		}
 		export interface Event {
 			channel: Channel;
-			gifter: {
-				id: TagsData['userId'];
-				name: TagsData['login'];
-				displayName: TagsData['displayName'];
-
-				color: TagsData['color'];
-
-				badges: TagsData['badges'];
-				badgeInfo: TagsData['badgeInfo'];
-
-				isMod: TagsData['mod'];
-				isSubscriber: TagsData['subscriber'];
-				type: TagsData['userType'];
-			};
-			message: {
-				system: TagsData['systemMsg'];
-				id: TagsData['id'];
-			};
+			user: UserMaybeAnonymous;
+			message: SystemMessage;
 			subscription: {
-				plan: {
-					tier: TagsData['msgParamSubPlan'];
-				};
+				plan: SubscriptionPlanNoName;
 				mysteryGift: {
+					id: TagsData['msgParamCommunityGiftId'];
 					// Number of gifts
 					count: TagsData['msgParamMassGiftCount'];
 					// Lifetime
@@ -621,98 +624,183 @@ export namespace USERNOTICE {
 	}
 
 	// subgift
+	// `${string} gifted a Tier ${number} sub to ${string}!`
+	// `${string} gifted ${number} months of Tier ${number} to ${string}. This is their first Gift Sub in the channel!`
+	// `${string} gifted ${number} months of Tier ${number} to ${string}. They've gifted ${number} months in the channel!`
+	// `${string} gifted a Tier ${number} sub to ${string}! They have given ${number} Gift Subs in the channel!`
+	// `An anonymous user gifted a Tier ${number} sub to ${string}! ` // Extra space at the end
 	export namespace MsgId_SubGift {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'subgift';
+			msgParamCommunityGiftId?: string;
+			msgParamFunString: string;
 			msgParamGiftMonths: number;
+			msgParamGiftTheme?: string; // 'showlove', 'party', 'lul', 'biblethump'
+			msgParamGoalContributionType?: GoalContributionType;
+			msgParamGoalCurrentContributions?: number;
+			msgParamGoalDescription?: string;
+			msgParamGoalTargetContributions?: number;
+			msgParamGoalUserContributions?: number;
 			msgParamMonths: number;
 			msgParamOriginId: string;
 			msgParamRecipientDisplayName: string;
 			msgParamRecipientId: string;
 			msgParamRecipientUserName: string;
-			msgParamSenderCount: number;
+			msgParamSenderCount?: number;
 			msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
-			// `${string} gifted a Tier 1 sub to ${string}!`
-			systemMsg: string;
 		}
 		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
 			params: [];
 		}
 		export interface Event {
 			channel: Channel;
-			gifter: {
-				id: TagsData['userId'];
-				name: TagsData['login'];
-				displayName: TagsData['displayName'];
-
-				color: TagsData['color'];
-
-				badges: TagsData['badges'];
-				badgeInfo: TagsData['badgeInfo'];
-
-				isMod: TagsData['mod'];
-				isSubscriber: TagsData['subscriber'];
-				type: TagsData['userType'];
-			};
-			message: {
-				// `${string} gifted a Tier ${number} sub to ${string}!`
-				system: TagsData['systemMsg'];
-				id: TagsData['id'];
-			};
+			user: UserMaybeAnonymous<TagsData>;
+			message: SystemMessage;
+			recipient: SimpleUser<
+				TagsData['msgParamRecipientId'],
+				TagsData['msgParamRecipientUserName'],
+				TagsData['msgParamRecipientDisplayName']
+			>;
 			subscription: {
-				plan: {
-					tier: TagsData['msgParamSubPlan'];
-					name: TagsData['msgParamSubPlanName'];
-				};
-				recipient: {
-					id: TagsData['msgParamRecipientId'];
-					name: TagsData['msgParamRecipientUserName'];
-					displayName: TagsData['msgParamRecipientDisplayName'];
+				plan: SubscriptionPlanFull;
+				mysteryGift?: {
+					id: TagsData['msgParamCommunityGiftId'];
+					// Lifetime; undefined for AnAnonymousGifter
+					userTotal: TagsData['msgParamSenderCount'];
 				};
 				gift: {
-					// TODO:
+					// Number of gifts
+					// count: TagsData['msgParamGiftMonths'];
+					// Months gifted
+					months: TagsData['msgParamGiftMonths'];
 				};
+			};
+			goal?: {
+				contributionType: NonNullable<TagsData['msgParamGoalContributionType']>;
+				currentContributions: NonNullable<TagsData['msgParamGoalCurrentContributions']>;
+				description: NonNullable<TagsData['msgParamGoalDescription']>;
+				targetContributions: NonNullable<TagsData['msgParamGoalTargetContributions']>;
+				userContributions: NonNullable<TagsData['msgParamGoalUserContributions']>;
 			};
 		}
 	}
 
+	// giftpaidupgrade
+	// `${string} is continuing the Gift Sub they got from ${string}!`
+	// TODO: get example of upgrading a gift sub from an anonymous user
+	export namespace MsgId_GiftPaidUpgrade {
+		export interface TagsData extends SharedTagsData {
+			msgId: 'giftpaidupgrade';
+			msgParamSenderLogin: string;
+			msgParamSenderName: string;
+		}
+		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+			params: [];
+		}
+	}
+
+	// primepaidupgrade
+	// `${string} converted from a Prime sub to a Tier ${number} sub!`
+	export namespace MsgId_PrimePaidUpgrade {
+		export interface TagsData extends SharedTagsData {
+			msgId: 'primepaidupgrade';
+			msgParamSubPlan: SubPlan;
+		}
+	}
+
+	// Combined giftpaidupgrade and primepaidupgrade
+	export namespace PaidUpgrade {
+		export type TagsData = MsgId_GiftPaidUpgrade.TagsData | MsgId_PrimePaidUpgrade.TagsData;
+		export interface Event {
+			channel: Channel;
+			user: User;
+			message: SystemMessage;
+			type: 'gift' | 'prime';
+			gifter?: SimpleUser<
+				undefined,
+				MsgId_GiftPaidUpgrade.TagsData['msgParamSenderLogin'],
+				MsgId_GiftPaidUpgrade.TagsData['msgParamSenderName']
+			>;
+			subscription?: {
+				plan: SubscriptionPlanNoName;
+			};
+		}
+	}
+
+	// standardpayforward
+	// `${string} is paying forward the Gift they got from ${string} to ${string}!`
+	export namespace MsgId_StandardPayForward {
+		export interface TagsData extends SharedTagsData {
+			msgId: 'standardpayforward';
+			msgParamRecipientDisplayName: string;
+			msgParamRecipientId: string;
+			msgParamRecipientUserName: string;
+		}
+		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+			params: [];
+		}
+	}
+
 	// communitypayforward
+	// `${string} is paying forward the Gift they got from ${string} to the community!`
 	export namespace MsgId_CommunityPayForward {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'communitypayforward';
+		}
+		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+			params: [];
+		}
+	}
+
+	// Combine StandardPayForward and CommunityPayForward
+	export namespace PayForward {
+		interface PayForwardTagsData {
 			msgParamPriorGifterAnonymous: boolean;
 			msgParamPriorGifterDisplayName: string;
 			msgParamPriorGifterId: string;
 			msgParamPriorGifterUserName: string;
-			// `${string} is paying forward the Gift they got from ${string} to the community!`
-			// TODO: anonymous version
-			systemMsg: string;
+		}
+		export type TagsData = (MsgId_StandardPayForward.TagsData | MsgId_CommunityPayForward.TagsData) & PayForwardTagsData;
+		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+			params: [];
+		}
+		export interface Event {
+			channel: Channel;
+			user: User;
+			message: SystemMessage;
+			type: 'standard' | 'community';
+			priorGifter: SimpleUserMaybeAnonymous<
+				TagsData['msgParamPriorGifterId'],
+				TagsData['msgParamPriorGifterUserName'],
+				TagsData['msgParamPriorGifterDisplayName']
+			>;
+			recipient?: SimpleUser<
+				MsgId_StandardPayForward.TagsData['msgParamRecipientId'],
+				MsgId_StandardPayForward.TagsData['msgParamRecipientUserName'],
+				MsgId_StandardPayForward.TagsData['msgParamRecipientDisplayName']
+			>;
+		}
+	}
+
+	// bitsbadgetier
+	// `bits badge tier notification`
+	export namespace MsgId_BitsBadgeTier {
+		export interface TagsData extends SharedTagsData {
+			msgId: 'bitsbadgetier';
+			// 1000, 25000, etc.
+			msgParamThreshold: number;
 		}
 		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
 			params: [ string ];
 		}
 		export interface Event {
 			channel: Channel;
-			user: {
-				id: TagsData['userId'];
-				name: TagsData['login'];
-				displayName: TagsData['displayName'];
-
-				color: TagsData['color'];
-
-				badges: TagsData['badges'];
-				badgeInfo: TagsData['badgeInfo'];
-
-				isMod: TagsData['mod'];
-				isSubscriber: TagsData['subscriber'];
-				type: TagsData['userType'];
+			user: User;
+			message: UserMessage;
+			badge: {
+				threshold: TagsData['msgParamThreshold'];
 			};
-			message: {
-				system: TagsData['systemMsg'];
-				id: TagsData['id'];
-			};
-			// TODO:
 		}
 	}
 
@@ -720,7 +808,7 @@ export namespace USERNOTICE {
 	export namespace MsgId_Announcement {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'announcement';
-			msgParamColor: 'PRIMARY' | 'BLUE' | 'GREEN' | 'ORANGE' | 'PURPLE';
+			msgParamColor: 'PRIMARY' | 'ORANGE' | 'GREEN' | 'BLUE' | 'PURPLE';
 			systemMsg: '';
 		}
 		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
@@ -728,23 +816,83 @@ export namespace USERNOTICE {
 		}
 		export interface Event {
 			channel: Channel;
-			user: {
-				id: TagsData['userId'];
-				name: TagsData['login'];
-				displayName: TagsData['displayName'];
-
-				color: TagsData['color'];
-
-				badges: TagsData['badges'];
-				badgeInfo: TagsData['badgeInfo'];
-
-				isMod: TagsData['mod'];
-				isSubscriber: TagsData['subscriber'];
-				type: TagsData['userType'];
-			};
-			message: {
-				user: Message['params'][0];
+			user: User;
+			message: UserMessage;
+			announcement: {
 				color: TagsData['msgParamColor'];
+			};
+		}
+	}
+
+	// raid
+	// `${number} raiders from ${string} have joined!"
+	export namespace MsgId_Raid {
+		export interface TagsData extends SharedTagsData {
+			msgId: 'raid';
+			// Duplicate data. Same as the user of the message.
+			msgParamDisplayName: string;
+			// Duplicate data. Same as the user of the message.
+			msgParamLogin: string;
+			// Has "%s" in the string for the resolution of the image ("300x300", "600x600", etc.)
+			msgParamProfileImageUrl: string;
+			msgParamViewerCount: number;
+		}
+		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+			params: [];
+		}
+		export interface Event {
+			channel: Channel;
+			user: User;
+			message: SystemMessage;
+			raid: {
+				viewerCount: TagsData['msgParamViewerCount'];
+				/** Replace "%s" with the resolution of the image ("300x300", "600x600", etc.) */
+				profileImageURL: TagsData['msgParamProfileImageUrl'];
+				/** Generate the profile image URL for the given size. */
+				getProfileImageURL: (size: 28 | 50 | 70 | 150 | 300 | 600) => string;
+			};
+		}
+	}
+
+	// unraid
+	// The raid has been canceled.
+	export namespace MsgId_Unraid {
+		export interface TagsData extends SharedTagsData {
+		}
+		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+			params: [];
+		}
+		export interface Event {
+			channel: Channel;
+			user: User;
+			message: SystemMessage;
+		}
+	}
+
+	// viewermilestone
+	// `${string} watched ${number} consecutive streams this month and sparked a watch streak!`
+	export namespace MsgId_ViewerMilestone {
+		export interface TagsData extends SharedTagsData {
+			msgId: 'viewermilestone';
+			// This may not be the only value
+			msgParamCategory: 'watch-streak'; // | '???';
+			// TODO: What does this UUID represent?
+			msgParamId: string;
+			// Probably a number, but could be a string for other categories
+			// For watch-streak it's a number, like: 3, 5, 7, 10, 15, ..., 65
+			msgParamValue: number;
+		}
+		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+			params: string[];
+		}
+		export interface Event {
+			channel: Channel;
+			user: User;
+			message: UserMessage;
+			milestone: {
+				category: TagsData['msgParamCategory'];
+				id: TagsData['msgParamId'];
+				value: TagsData['msgParamValue'];
 			};
 		}
 	}

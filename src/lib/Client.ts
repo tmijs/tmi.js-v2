@@ -7,14 +7,13 @@ import type {
 	GLOBALUSERSTATE, USERSTATE, JOIN, PART, ROOMSTATE, NOTICE, PRIVMSG,
 	CLEARMSG, CLEARCHAT, USERNOTICE,
 	ChatColor,
+	SubPlan,
 } from './irc/commands';
 import { Channel, ChannelTemporary } from './Channel';
 import { LogLevel, Logger } from './Logger';
 
 const ACTION_MESSAGE_PREFIX = '\u0001ACTION ';
 const ACTION_MESSAGE_SUFFIX = '\u0001';
-
-const exponentLookup = [ 1, 10, 100, 1_000, 10_000, 100_000 ];
 
 interface ClientOptions {
 	log?: Logger;
@@ -61,10 +60,15 @@ type ClientEvents = {
 
 	sub: [ event: USERNOTICE.MsgId_Sub.Event ];
 	resub: [ event: USERNOTICE.MsgId_Resub.Event ];
-	submysterygift: [ event: USERNOTICE.MsgId_SubMysteryGift.Event ];
-	subgift: [ event: USERNOTICE.MsgId_SubGift.Event ];
-	communitypayforward: [ event: USERNOTICE.MsgId_CommunityPayForward.Event ];
+	subMysteryGift: [ event: USERNOTICE.MsgId_SubMysteryGift.Event ];
+	subGift: [ event: USERNOTICE.MsgId_SubGift.Event ];
+	paidUpgrade: [ event: USERNOTICE.PaidUpgrade.Event ];
+	payForward: [ event: USERNOTICE.PayForward.Event ];
+	viewerMilestone: [ event: USERNOTICE.MsgId_ViewerMilestone.Event ];
+	bitsBadgeTier: [ event: USERNOTICE.MsgId_BitsBadgeTier.Event ];
 	announcement: [ event: USERNOTICE.MsgId_Announcement.Event ];
+	raid: [ event: USERNOTICE.MsgId_Raid.Event ];
+	unraid: [ event: USERNOTICE.MsgId_Unraid.Event ];
 };
 
 interface Keepalive {
@@ -478,43 +482,311 @@ export class Client extends EventEmitter<ClientEvents> {
 		}
 	}
 	private onCommand_USERNOTICE(e: USERNOTICE.Message) {
+		function getPlan(): USERNOTICE.SubscriptionPlanEmpty;
+		function getPlan(subPlan: SubPlan): USERNOTICE.SubscriptionPlanNoName;
+		function getPlan(subPlan: SubPlan, subPlanName: string): USERNOTICE.SubscriptionPlanFull;
+		function getPlan(subPlan?: SubPlan, subPlanName?: string) {
+			if(subPlan === undefined) {
+				return {
+					name: undefined,
+					plan: undefined,
+					tier: undefined,
+					isPrime: false
+				};
+			}
+			return {
+				name: subPlanName,
+				plan: subPlan,
+				tier: (<const>{ 1000: 1, 2000: 2, 3000: 3, Prime: 1 })[subPlan] ?? 1,
+				isPrime: subPlan === 'Prime'
+			};
+		}
+		function getSimpleUser<ID = string, Name = string, DisplayName = string>(id: ID, name: Name, displayName: DisplayName): USERNOTICE.SimpleUser<ID, Name, DisplayName>;
+		function getSimpleUser<ID = string, Name = string, DisplayName = string>(id: ID, name: Name, displayName: DisplayName, isAnonymous: boolean): USERNOTICE.SimpleUserMaybeAnonymous<ID, Name, DisplayName>;
+		function getSimpleUser<ID = string, Name = string, DisplayName = string>(id: ID, name: Name, displayName: DisplayName, isAnonymous?: boolean) {
+			const user = { id, name, displayName };
+			return isAnonymous === undefined ? user : { ...user, isAnonymous };
+		}
+		function getUser(tags: USERNOTICE.SharedTagsData, checkForAnonymous?: false): USERNOTICE.User<typeof tags>;
+		function getUser(tags: USERNOTICE.SharedTagsData, checkForAnonymous: true): USERNOTICE.UserMaybeAnonymous<typeof tags>;
+		function getUser(tags: USERNOTICE.SharedTagsData, checkForAnonymous = false) {
+			const user: USERNOTICE.User<typeof tags> = {
+				id: tags.userId,
+				name: tags.login,
+				displayName: tags.displayName,
+				badgeInfo: tags.badgeInfo,
+				badges: tags.badges,
+				color: tags.color,
+				isMod: tags.mod,
+				isSubscriber: tags.subscriber,
+				type: tags.userType,
+			};
+			if(checkForAnonymous) {
+				const anonUser: USERNOTICE.UserMaybeAnonymous<typeof tags> = {
+					...user,
+					isAnonymous: tags.login === 'ananonymousgifter'
+				};
+				return anonUser;
+			}
+			return user;
+		}
+		function getMessage(tags: USERNOTICE.SharedTagsData): USERNOTICE.SystemMessage;
+		function getMessage(tags: USERNOTICE.SharedTagsData, userMessage: string): USERNOTICE.UserMessage;
+		function getMessage(tags: USERNOTICE.SharedTagsData, userMessage?: string) {
+			return {
+				id: tags.id,
+				text: userMessage,
+				system: tags.systemMsg,
+				emotes: tags.emotes,
+				flags: tags.flags,
+			};
+		};
+		function getGoal(tags: USERNOTICE.MsgId_SubMysteryGift.TagsData | USERNOTICE.MsgId_SubGift.TagsData) {
+			if(tags.msgParamGoalContributionType) {
+				return {
+					contributionType: tags.msgParamGoalContributionType,
+					currentContributions: tags.msgParamGoalCurrentContributions!,
+					// Match the Twitch Helix API so that the description will be an empty string if there's no goal description
+					description: tags.msgParamGoalDescription ?? '',
+					targetContributions: tags.msgParamGoalTargetContributions!,
+					userContributions: tags.msgParamGoalUserContributions!,
+				};
+			}
+			return undefined;
+		}
+
 		this.emit('USERNOTICE', e);
 		const { tags: baseTags, params } = e;
 		const channel = this.getChannel(e);
-		if('msgId' in baseTags) {
-			switch(baseTags.msgId) {
-				case 'sub': {
-					const tags = baseTags as USERNOTICE.MsgId_Sub.TagsData;
-					this.emit('sub', {
-						channel,
-						user: {
-							id: tags.userId,
-							name: tags.login,
-							displayName: tags.displayName,
-							badgeInfo: tags.badgeInfo,
-							badges: tags.badges,
-							color: tags.color,
-							isMod: tags.mod,
-							isSubscriber: true,
-							type: tags.userType,
-						},
-						message: {
-							system: tags.systemMsg,
-						},
-						subscription: {
-							plan: {
-								name: tags.msgParamSubPlanName,
-								plan: tags.msgParamSubPlan,
-								tier: tags.msgParamSubPlan === 'Prime' ? 1 : (<const>{ 1000: 1, 2000: 2, 3000: 3 })[tags.msgParamSubPlan] ?? 1,
-								isPrime: tags.msgParamSubPlan === 'Prime',
-							},
-							multiMonth: {
-								duration: tags.msgParamMultimonthDuration,
-							}
-						}
-					});
-					break;
+		if('msgId' in baseTags === false) {
+			this.emit('unhandledCommand', e);
+			return;
+		}
+		switch(baseTags.msgId) {
+			case 'sub': {
+				type E = USERNOTICE.MsgId_Sub.Event;
+				const tags = baseTags as USERNOTICE.MsgId_Sub.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags);
+				const subscription: E['subscription'] = {
+					plan: getPlan(tags.msgParamSubPlan, tags.msgParamSubPlanName),
+					multiMonth: {
+						duration: tags.msgParamMultimonthDuration,
+					}
+				};
+				this.emit('sub', { channel, user, message, subscription });
+				break;
+			}
+			case 'resub': {
+				type E = USERNOTICE.MsgId_Resub.Event;
+				const tags = baseTags as USERNOTICE.MsgId_Resub.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags, params[0] ?? '');
+				let gift: E['subscription']['gift'];
+				if(tags.msgParamWasGifted) {
+					gift = {
+						gifter: getSimpleUser(
+							tags.msgParamGifterId!,
+							tags.msgParamGifterLogin!,
+							tags.msgParamGifterName!,
+							tags.msgParamAnonGift!
+						),
+						monthBeingRedeemed: tags.msgParamGiftMonths!,
+						months: tags.msgParamGiftMonths!
+					};
 				}
+				let streak: E['subscription']['streak'];
+				if(tags.msgParamShouldShareStreak) {
+					streak = {
+						months: tags.msgParamStreakMonths!
+					};
+				}
+				const subscription: E['subscription'] = {
+					plan: getPlan(tags.msgParamSubPlan, tags.msgParamSubPlanName),
+					multiMonth: {
+						duration: tags.msgParamMultimonthDuration,
+						tenure: tags.msgParamCumulativeMonths,
+					},
+					cumulativeMonths: tags.msgParamCumulativeMonths,
+					streak,
+					gift
+				};
+				this.emit('resub', { channel, user, message, subscription });
+				break;
+			}
+			case 'submysterygift': {
+				type E = USERNOTICE.MsgId_SubMysteryGift.Event;
+				const tags = baseTags as USERNOTICE.MsgId_SubMysteryGift.TagsData;
+				const user: E['user'] = getUser(tags, true);
+				const message: E['message'] = getMessage(tags);
+				const subscription: E['subscription'] = {
+					plan: getPlan(tags.msgParamSubPlan),
+					mysteryGift: {
+						id: tags.msgParamCommunityGiftId,
+						count: tags.msgParamMassGiftCount,
+						userTotal: tags.msgParamSenderCount,
+					}
+				};
+				const goal: E['goal'] = getGoal(tags);
+				this.emit('subMysteryGift', { channel, user, message, subscription, goal });
+				break;
+			}
+			case 'subgift': {
+				type E = USERNOTICE.MsgId_SubGift.Event;
+				const tags = baseTags as USERNOTICE.MsgId_SubGift.TagsData;
+				const user: E['user'] = getUser(tags, true);
+				const message: E['message'] = {
+					id: tags.id,
+					system: tags.systemMsg,
+				};
+				let mysteryGift: E['subscription']['mysteryGift'];
+				if(tags.msgParamCommunityGiftId) {
+					mysteryGift = {
+						id: tags.msgParamCommunityGiftId,
+						userTotal: tags.msgParamSenderCount,
+					};
+				}
+				const subscription: E['subscription'] = {
+					plan: getPlan(tags.msgParamSubPlan, tags.msgParamSubPlanName),
+					mysteryGift,
+					gift: {
+						months: tags.msgParamGiftMonths,
+					},
+				};
+				const recipient: E['recipient'] = getSimpleUser(
+					tags.msgParamRecipientId,
+					tags.msgParamRecipientUserName,
+					tags.msgParamRecipientDisplayName
+				);
+				const goal: E['goal'] = getGoal(tags);
+				this.emit('subGift', { channel, user, message, subscription, recipient, goal });
+				break;
+			}
+			case 'giftpaidupgrade':
+			case 'primepaidupgrade': {
+				type E = USERNOTICE.PaidUpgrade.Event;
+				const tags = baseTags as USERNOTICE.PaidUpgrade.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags);
+				const type = (<Record<typeof tags.msgId, E['type']>>{
+					giftpaidupgrade: 'gift',
+					primepaidupgrade: 'prime'
+				})[tags.msgId];
+				let gifter: E['gifter'];
+				let subscription: E['subscription'];
+				if(tags.msgId === 'giftpaidupgrade') {
+					gifter = getSimpleUser(
+						undefined,
+						tags.msgParamSenderLogin,
+						tags.msgParamSenderName
+					);
+				}
+				else {
+					subscription = {
+						plan: getPlan(tags.msgParamSubPlan),
+					};
+				}
+				this.emit('paidUpgrade', { channel, user, message, type, gifter, subscription });
+				break;
+			}
+			case 'standardpayforward':
+			case 'communitypayforward': {
+				type E = USERNOTICE.PayForward.Event;
+				const tags = baseTags as USERNOTICE.PayForward.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags);
+				const type = (<Record<typeof tags.msgId, E['type']>>{
+					standardpayforward: 'standard',
+					communitypayforward: 'community'
+				})[tags.msgId];
+				const priorGifter: E['priorGifter'] = getSimpleUser(
+					tags.msgParamPriorGifterId,
+					tags.msgParamPriorGifterUserName,
+					tags.msgParamPriorGifterDisplayName,
+					tags.msgParamPriorGifterAnonymous
+				);
+				let recipient: E['recipient'];
+				if('msgParamRecipientId' in tags) {
+					recipient = getSimpleUser(
+						tags.msgParamRecipientId,
+						tags.msgParamRecipientUserName,
+						tags.msgParamRecipientDisplayName,
+					);
+				}
+				this.emit('payForward', { channel, user, message, type, priorGifter, recipient });
+				break;
+			}
+			case 'bitsbadgetier': {
+				type E = USERNOTICE.MsgId_BitsBadgeTier.Event;
+				const tags = baseTags as USERNOTICE.MsgId_BitsBadgeTier.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags, params[0] ?? '');
+				const badge: E['badge'] = {
+					threshold: tags.msgParamThreshold,
+				};
+				this.emit('bitsBadgeTier', { channel, user, message, badge });
+				break;
+			}
+			case 'announcement': {
+				type E = USERNOTICE.MsgId_Announcement.Event;
+				const tags = baseTags as USERNOTICE.MsgId_Announcement.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags, params[0] ?? '');
+				const announcement: E['announcement'] = {
+					color: tags.msgParamColor,
+				};
+				this.emit('announcement', { channel, user, message, announcement });
+				break;
+			}
+			case 'raid': {
+				type E = USERNOTICE.MsgId_Raid.Event;
+				const tags = baseTags as USERNOTICE.MsgId_Raid.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags);
+				const raid: E['raid'] = {
+					profileImageURL: tags.msgParamProfileImageUrl,
+					getProfileImageURL(size) {
+						if(size <= 0) {
+							throw new Error(`Invalid size: ${size}. Smallest size is 28`);
+						}
+						else if(![ 28, 50, 70, 150, 300, 600 ].includes(size)) {
+							const suggestion = [ 28, 50, 70, 150, 300, 600 ].sort((a, b) => Math.abs(size - a) - Math.abs(size - b))[0];
+							throw new Error(`Invalid size: ${size}. Based on the input, a suggested size is: ${suggestion}`);
+						}
+						return this.profileImageURL.replace('%s', `${size}x${size}`);
+					},
+					viewerCount: tags.msgParamViewerCount,
+				};
+				this.emit('raid', { channel, user, message, raid });
+				break;
+			}
+			case 'unraid': {
+				type E = USERNOTICE.MsgId_Unraid.Event;
+				const tags = baseTags as USERNOTICE.MsgId_Unraid.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags);
+				this.emit('unraid', { channel, user, message });
+				break;
+			}
+			case 'viewermilestone': {
+				type E = USERNOTICE.MsgId_ViewerMilestone.Event;
+				const tags = baseTags as USERNOTICE.MsgId_ViewerMilestone.TagsData;
+				const user: E['user'] = getUser(tags);
+				const message: E['message'] = getMessage(tags, params[0] ?? '');
+				this.emit('viewerMilestone', {
+					channel,
+					user,
+					message,
+					milestone: {
+						category: tags.msgParamCategory,
+						value: tags.msgParamValue,
+						id: tags.msgParamId,
+					}
+				});
+				break;
+			}
+			default: {
+				this.emit('unhandledCommand', e);
 			}
 		}
 	}
