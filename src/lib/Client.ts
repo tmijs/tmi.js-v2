@@ -513,6 +513,21 @@ export class Client extends EventEmitter<ClientEvents> {
 		// ':tmi.twitch.tv NOTICE * :Login authentication failed'
 		this.emit('NOTICE', e);
 		this.log?.info('NOTICE:', e);
+		switch(e.tags.msgId) {
+			case 'emote_only_on':
+			case 'emote_only_off':
+			case 'followers_on_zero':
+			case 'followers_on':
+			case 'followers_off':
+			case 'slow_on':
+			case 'slow_off':
+			case 'subs_on':
+			case 'subs_off':
+			case 'r9k_on':
+			case 'r9k_off': {
+				return;
+			}
+		}
 		switch(e.params[1]) {
 			case 'Login unsuccessful':
 			case 'Login authentication failed': {
