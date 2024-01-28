@@ -210,7 +210,7 @@ export class Client extends EventEmitter<ClientEvents> {
 		// this.identity.isAnonymous = token === Token.anonymousIrcToken;
 		this.send(`PASS ${token}`);
 		this.send(`NICK ${this.identity.isAnonymous ? 'justinfan123456' : 'justinfan'}`);
-	}
+	};
 	private onSocketClose: ((event: WebSocket.CloseEvent) => void) = event => {
 		this.log?.info('Socket close');
 		this.cleanupKeepalive();
@@ -220,11 +220,11 @@ export class Client extends EventEmitter<ClientEvents> {
 		});
 		this.channels.clear();
 		this.emit('socketClose', event.code, event.reason, event.wasClean);
-	}
+	};
 	private onSocketError: ((event: WebSocket.ErrorEvent) => void) = event => {
 		this.log?.error('Socket error:', event);
 		this.emit('socketError', event);
-	}
+	};
 	protected onIrcLine: ((line: string, now?: number) => void) = (line, now = Date.now()) => {
 		const message = parseIrcLine(line);
 		if(!message) {
@@ -328,13 +328,13 @@ export class Client extends EventEmitter<ClientEvents> {
 				this.emit('unhandledCommand', message);
 			}
 		}
-	}
+	};
 	private onSocketMessage: ((event: WebSocket.MessageEvent) => void) = event => {
 		const now = Date.now();
 		const lines = event.data.toString().trim().split('\r\n');
 		this.emit('socketMessage', event, lines);
 		lines.forEach(line => this.onIrcLine(line, now));
-	}
+	};
 	_debugProcessMessage(data: string) {
 		this.onSocketMessage({ data } as any);
 	}
@@ -773,16 +773,12 @@ export class Client extends EventEmitter<ClientEvents> {
 				const tags = baseTags as USERNOTICE.MsgId_ViewerMilestone.TagsData;
 				const user: E['user'] = getUser(tags);
 				const message: E['message'] = getMessage(tags, params[0] ?? '');
-				this.emit('viewerMilestone', {
-					channel,
-					user,
-					message,
-					milestone: {
-						category: tags.msgParamCategory,
-						value: tags.msgParamValue,
-						id: tags.msgParamId,
-					}
-				});
+				const milestone: E['milestone'] = {
+					category: tags.msgParamCategory,
+					value: tags.msgParamValue,
+					id: tags.msgParamId,
+				};
+				this.emit('viewerMilestone', { channel, user, message, milestone });
 				break;
 			}
 			default: {
@@ -1050,7 +1046,7 @@ export class Client extends EventEmitter<ClientEvents> {
 			channel: this.getChannel(userState),
 			tags: userState.tags,
 			user: this.identity
-		}
+		};
 	}
 	/**
 	 * Send a reply to a message in a channel. The channel name will be normalized.

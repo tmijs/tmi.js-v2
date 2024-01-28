@@ -2,7 +2,6 @@ import { Channel } from '../Channel';
 import { Client } from '../Client';
 import { IrcMessage, ChannelString, TagsDataType } from './IrcMessage';
 import { EmotesTag, MessageFlag } from './tags';
-import { _parseTagsMapData } from './tags-data';
 
 interface BadgesData {
 	bits?: string;
@@ -879,7 +878,7 @@ export namespace USERNOTICE {
 			// TODO: What does this UUID represent?
 			msgParamId: string;
 			// Probably a number, but could be a string for other categories
-			// For watch-streak it's a number, like: 3, 5, 7, 10, 15, ..., 65
+			// For watch-streak it's a number, like: 3, 5, 7, 10, 15, ..., 65, 70
 			msgParamValue: number;
 		}
 		export interface Message extends USERNOTICE.BaseMessage<TagsData> {

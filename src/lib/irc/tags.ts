@@ -45,7 +45,7 @@ export const parseTagsFunc: Record<ETagFuncName, TagFunc> = {
 			const finalIndices = indices.split(',').map(pos => {
 				const [ start, end ] = pos.split('-');
 				return [ Number(start), Number(end) + 1 ];
-			})
+			});
 			emotes.set(id, finalIndices as [ number, number ][]);
 		}
 		return emotes;
