@@ -25,8 +25,11 @@ export class Logger {
 
 	constructor(level?: LogLevel) {
 		if(level !== undefined) {
-			this.level = level;
+			this.setLevel(level);
 		}
+	}
+	getLevel() {
+		return this.level;
 	}
 	setLevel(level: LogLevel) {
 		this.level = level;
