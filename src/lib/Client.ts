@@ -929,13 +929,16 @@ export class Client extends EventEmitter<ClientEvents> {
 		});
 	}
 	private onCommand_CLEARMSG(e: CLEARMSG.Message) {
-		const { tags } = e;
+		const { tags, params } = e;
 		this.emit('CLEARMSG', e);
 		this.emit('deleteMessage', {
 			channel: this.getChannel(e),
-			id: tags.targetMsgId,
 			user: {
 				name: tags.login,
+			},
+			message: {
+				id: tags.targetMsgId,
+				text: params[0] ?? ''
 			},
 			timestamp: tags.tmiSentTs
 		});

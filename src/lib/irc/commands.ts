@@ -351,7 +351,10 @@ export namespace CLEARMSG {
 		user: {
 			name: TagsData['login'];
 		};
-		id: TagsData['targetMsgId'];
+		message: {
+			id: TagsData['targetMsgId'];
+			text: Message['params'][0];
+		};
 		timestamp: TagsData['tmiSentTs'];
 	}
 }
