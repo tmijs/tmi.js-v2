@@ -685,7 +685,8 @@ export class Client extends EventEmitter<ClientEvents> {
 						id: tags.msgParamCommunityGiftId,
 						count: tags.msgParamMassGiftCount,
 						userTotal: tags.msgParamSenderCount,
-					}
+						theme: tags.msgParamGiftTheme,
+					},
 				};
 				const goal: E['goal'] = getGoal(tags);
 				this.emit('subMysteryGift', { channel, user, message, subscription, goal });
@@ -704,6 +705,7 @@ export class Client extends EventEmitter<ClientEvents> {
 					mysteryGift = {
 						id: tags.msgParamCommunityGiftId,
 						userTotal: tags.msgParamSenderCount,
+						theme: tags.msgParamGiftTheme,
 					};
 				}
 				const subscription: E['subscription'] = {

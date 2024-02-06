@@ -599,6 +599,8 @@ export namespace USERNOTICE {
 		}
 	}
 
+	type GiftTheme = 'showlove' | 'party' | 'lul' | 'biblethump';
+
 	// submysterygift
 	// `${string} is gifting ${number} Tier ${number} Subs to ${string}'s community! They've gifted a total of ${number} in the channel!`,
 	// `${string} is gifting ${number} Tier ${number} Subs to ${string}'s community!`,
@@ -608,7 +610,7 @@ export namespace USERNOTICE {
 			msgId: 'submysterygift';
 			msgParamCommunityGiftId: string;
 			// These may not be the only values
-			msgParamGiftTheme: 'showlove' | 'party' | 'lul' | 'biblethump';
+			msgParamGiftTheme?: GiftTheme;
 			msgParamGoalContributionType?: GoalContributionType;
 			msgParamGoalCurrentContributions?: number;
 			// Description may be omitted if it would be otherwise empty. (User set value)
@@ -638,6 +640,7 @@ export namespace USERNOTICE {
 					count: TagsData['msgParamMassGiftCount'];
 					// Lifetime
 					userTotal: TagsData['msgParamSenderCount'];
+					theme: TagsData['msgParamGiftTheme'];
 				};
 			};
 			goal?: Goal<
@@ -662,7 +665,7 @@ export namespace USERNOTICE {
 			msgParamCommunityGiftId?: string;
 			msgParamFunString: string;
 			msgParamGiftMonths: number;
-			msgParamGiftTheme?: string; // 'showlove', 'party', 'lul', 'biblethump'
+			msgParamGiftTheme?: GiftTheme;
 			msgParamGoalContributionType?: GoalContributionType;
 			msgParamGoalCurrentContributions?: number;
 			msgParamGoalDescription?: string;
@@ -695,6 +698,7 @@ export namespace USERNOTICE {
 					id: TagsData['msgParamCommunityGiftId'];
 					// Lifetime; undefined for AnAnonymousGifter
 					userTotal: TagsData['msgParamSenderCount'];
+					theme: TagsData['msgParamGiftTheme'];
 				};
 				gift: {
 					// Number of gifts
