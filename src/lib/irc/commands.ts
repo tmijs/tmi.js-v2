@@ -618,7 +618,7 @@ export namespace USERNOTICE {
 			msgParamMassGiftCount: number;
 			msgParamOriginId: string;
 			// May be ommited if the user is anonymous
-			msgParamSenderCount: number;
+			msgParamSenderCount?: number;
 			// There is no msgParamSubPlanName for submysterygift
 			// msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
