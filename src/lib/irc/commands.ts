@@ -31,7 +31,7 @@ export type BadgeInfo = Badges<BadgesInfoData>;
 
 export type ChatColor = '' | `#${string}`;
 type EmoteSets = string[];
-type UserType = '';
+type UserType = '' | 'mod' | 'staff';
 
 export type SubPlan = '1000' | '2000' | '3000' | 'Prime';
 export type SubTier = 1 | 2 | 3;
