@@ -145,7 +145,6 @@ interface SayReturnValue {
 
 export class Client extends EventEmitter<ClientEvents> {
 	socket?: WebSocket;
-	private opts: ClientOptions;
 	private keepalive: Keepalive;
 	log?: Logger;
 	identity: Identity;
@@ -153,11 +152,12 @@ export class Client extends EventEmitter<ClientEvents> {
 	 * The channels that the client is currently JOINed to.
 	 */
 	channels: Map<string, Channel>;
+	wsOptions?: WebSocket.ClientOptions;
 	private pendingChannels: Set<string> = new Set();
-	constructor(opts?: ClientOptions) {
+	constructor(opts: ClientOptions = {}) {
 		super();
-		this.opts = opts ?? {};
-		this.log = this.opts.log ?? new Logger(LogLevel.Fatal);
+		this.log = opts.log ?? new Logger(LogLevel.Fatal);
+		this.wsOptions = opts.wsOptions;
 		this.keepalive = {
 			intervalMs: 60_000,
 			timeoutMs: 10_000
@@ -167,10 +167,10 @@ export class Client extends EventEmitter<ClientEvents> {
 				return this.token?.isAnonymous ?? true;
 			},
 			color: '',
-			token: this.opts.token instanceof Token ? this.opts.token : new Token(this.opts.token)
+			token: opts.token instanceof Token ? opts.token : new Token(opts.token)
 		};
 		this.channels = new Map();
-		const initialChannels = (this.opts.initialChannels ?? []).map(Channel.normalizeName);
+		const initialChannels = (opts.initialChannels ?? []).map(Channel.normalizeName);
 		this.pendingChannels = new Set(initialChannels);
 	}
 
@@ -182,7 +182,7 @@ export class Client extends EventEmitter<ClientEvents> {
 				throw new Error('Already connected or connecting');
 			}
 		}
-		const connectionOptions: ClientOptions['wsOptions'] = { ...(this.opts.wsOptions ?? {}) };
+		const connectionOptions: ClientOptions['wsOptions'] = { ...(this.wsOptions ?? {}) };
 		this.socket = new WebSocket('wss://irc-ws.chat.twitch.tv:443', 'irc', connectionOptions);
 		this.socket.onopen = this.onSocketOpen;
 		this.socket.onclose = this.onSocketClose;
