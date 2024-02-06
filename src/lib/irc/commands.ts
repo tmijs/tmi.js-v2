@@ -27,7 +27,7 @@ export interface Badges<Data = BadgesData> extends Map<keyof Data, unknown> {
 /**
  * Additional information about the user's badges.
  */
-export type BadgesInfo = Badges<BadgesInfoData>;
+export type BadgeInfo = Badges<BadgesInfoData>;
 
 export type ChatColor = '' | `#${string}`;
 type EmoteSets = string[];
@@ -45,7 +45,7 @@ type PrefixFull = Record<'nick' | 'user' | 'host', string>;
 
 export namespace GLOBALUSERSTATE {
 	export interface TagsData {
-		badgeInfo: BadgesInfo;
+		badgeInfo: BadgeInfo;
 		badges: Badges;
 		color: ChatColor;
 		displayName: string;
@@ -62,7 +62,7 @@ export namespace GLOBALUSERSTATE {
 
 export namespace USERSTATE {
 	export interface TagsData {
-		badgeInfo: BadgesInfo;
+		badgeInfo: BadgeInfo;
 		badges: Badges;
 		clientNonce?: string;
 		color: ChatColor;
@@ -86,13 +86,14 @@ export namespace USERSTATE {
 export namespace ROOMSTATE {
 	export interface TagsData {
 		/**
-		 * Determines whether the chat room allows only messages with emotes.
+		 * Determines whether the chat room only allows messages with emotes.
 		 */
 		emoteOnly: boolean;
 		/**
 		 * Determines whether only followers can post messages in the chat room. The value indicates how long, in
 		 * minutes, the user must have followed the broadcaster before posting chat messages. A value of -1 indicates
-		 * that this setting is disabled.
+		 * that this setting is disabled. A value of `0` indicates the user must be following but without a minimum
+		 * time.
 		 */
 		followersOnly: number;
 		/**
@@ -104,13 +105,12 @@ export namespace ROOMSTATE {
 		 */
 		roomId: string;
 		/**
-		 * Determines how long, in seconds, users must wait between sending
-		 * messages.
+		 * Determines how long, in seconds, users must wait between sending messages. A value of `0` indicates that this
+		 * setting is disabled.
 		 */
 		slow: number;
 		/**
-		 * Determines whether only subscribers and moderators can chat in the
-		 * chat room.
+		 * Determines whether only subscribers and moderators can send messages in the channel.
 		 */
 		subsOnly: boolean;
 	}
@@ -126,26 +126,17 @@ export namespace ROOMSTATE {
 		change: Partial<Omit<TagsData, 'roomId'>>;
 	}
 
-	export interface IndividualEvent {
+	export interface IndividualEvent<State> {
 		channel: Channel;
 		isEnabled: boolean;
+		state: State;
 	}
 
-	export interface Event_EmoteOnly extends IndividualEvent {
-		state: TagsData['emoteOnly'];
-	}
-	export interface Event_FollowersOnly extends IndividualEvent {
-		state: TagsData['followersOnly'];
-	}
-	export interface Event_UniqueMode extends IndividualEvent {
-		state: TagsData['r9k'];
-	}
-	export interface Event_SlowMode extends IndividualEvent {
-		state: TagsData['slow'];
-	}
-	export interface Event_SubsOnly extends IndividualEvent {
-		state: TagsData['subsOnly'];
-	}
+	export type Event_EmoteOnly = IndividualEvent<TagsData['emoteOnly']>;
+	export type Event_FollowersOnly = IndividualEvent<TagsData['followersOnly']>;
+	export type Event_UniqueMode = IndividualEvent<TagsData['r9k']>;
+	export type Event_SlowMode = IndividualEvent<TagsData['slow']>;
+	export type Event_SubsOnly = IndividualEvent<TagsData['subsOnly']>;
 }
 
 export namespace JOIN {
@@ -201,7 +192,7 @@ export namespace PRIVMSG {
 	type MsgId_Reward = 'highlighted-message' | 'skip-subs-mode-message';
 	type MsgId_Intro = 'user-intro';
 	export interface TagsData {
-		badgeInfo: BadgesInfo;
+		badgeInfo: BadgeInfo;
 		badges: Badges;
 		clientNonce?: string;
 		color: ChatColor;
@@ -298,10 +289,10 @@ export namespace PRIVMSG {
 		cheer?: Cheer; // tags bits
 		parent?: ReplyParent; // tags has reply-parent-msg-id
 		reward?: Reward_Custom | Reward_HighlightedMessage | Reward_SkipSubsModeMessage;
-		tags: Tags;
 		// TODO: Implement returning Event_Reply
 		// reply(text: string): Promise<Event_Reply>;
 		reply(text: string): ReturnType<Client['reply']>;
+		tags: Tags;
 	}
 	export interface Event_Base extends Event_Message {}
 	export interface ReplyParent {
@@ -392,8 +383,8 @@ export namespace CLEARCHAT {
 			id: TagsData['targetUserId'];
 			name: Message['params'][0];
 		};
-		tags: Omit<Required<TagsData>, 'banDuration'>;
 		timestamp: TagsData['tmiSentTs'];
+		tags: Omit<Required<TagsData>, 'banDuration'>;
 	}
 	export interface Event_Timeout {
 		channel: Channel;
@@ -408,19 +399,19 @@ export namespace CLEARCHAT {
 		 * The duration of the timeout in seconds.
 		 */
 		banSeconds: NonNullable<TagsData['banDuration']>;
-		tags: Required<TagsData>;
 		timestamp: TagsData['tmiSentTs'];
+		tags: Required<TagsData>;
 	}
 	export interface Event_ChatCleared {
 		channel: Channel;
-		tags: Omit<TagsData, 'banDuration' | 'targetUserId'>;
 		timestamp: TagsData['tmiSentTs'];
+		tags: Omit<TagsData, 'banDuration' | 'targetUserId'>;
 	}
 }
 
 export namespace USERNOTICE {
 	export interface SharedTagsData {
-		badgeInfo: BadgesInfo;
+		badgeInfo: BadgeInfo;
 		badges: Badges;
 		color: ChatColor;
 		displayName: string;
@@ -441,8 +432,8 @@ export namespace USERNOTICE {
 		name: Name;
 		displayName: DisplayName;
 	}
-	export interface SimpleUserMaybeAnonymous<ID = string, Name = string, DisplayName = string> extends SimpleUser<ID, Name, DisplayName> {
-		isAnonymous: boolean;
+	export interface SimpleUserMaybeAnonymous<ID = string, Name = string, DisplayName = string, AnonymousReason = boolean> extends SimpleUser<ID, Name, DisplayName> {
+		isAnonymous: AnonymousReason;
 	}
 	export interface User<TagsData extends SharedTagsData = SharedTagsData> {
 		id: TagsData['userId'];
@@ -497,6 +488,23 @@ export namespace USERNOTICE {
 		prefix: PrefixHostOnly;
 	}
 	export interface Message extends BaseMessage<SharedTagsData> {
+	}
+	// https://dev.twitch.tv/docs/api/reference/#get-creator-goals
+	// The Helix API lists 5 types. 4 of them being sub related.
+	// "subscription", "subscription_count", "new_subscription", "new_subscription_count"
+	export type GoalContributionType = 'SUB_POINTS' | 'SUBS' | 'NEW_SUB_POINTS' | 'NEW_SUBS';
+	export interface Goal<
+		Type extends GoalContributionType = GoalContributionType,
+		Description extends string = string,
+		Current extends number = number,
+		Target extends number = number,
+		User extends number = number
+	> {
+		contributionType: Type;
+		description: Description;
+		currentContributions: Current;
+		targetContributions: Target;
+		userContributions: User;
 	}
 
 	// `${string} subscribed at Tier ${number}.`
@@ -553,7 +561,6 @@ export namespace USERNOTICE {
 			msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
 			msgParamWasGifted: boolean;
-			// `${string} subscribed with Prime. They've subscribed for 5 months, currently on a 1 month streak!`
 			systemMsg: string;
 		}
 		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
@@ -574,12 +581,12 @@ export namespace USERNOTICE {
 					months: NonNullable<TagsData['msgParamStreakMonths']>;
 				}
 				gift?: {
-					gifter: {
-						id: NonNullable<TagsData['msgParamGifterId']>;
-						name: NonNullable<TagsData['msgParamGifterLogin']>;
-						displayName: NonNullable<TagsData['msgParamGifterName']>;
-						isAnonymous: NonNullable<TagsData['msgParamAnonGift']>;
-					};
+					gifter: SimpleUserMaybeAnonymous<
+							NonNullable<TagsData['msgParamGifterId']>,
+							NonNullable<TagsData['msgParamGifterLogin']>,
+							NonNullable<TagsData['msgParamGifterName']>,
+							NonNullable<TagsData['msgParamAnonGift']>
+					>;
 					// User is at month monthBeingRedeemed (1, 2, 3, ..., 11, 12) out of msgParamGiftMonths (3, 6, 12) months
 					// Value can be 0 (at least in two cases of anonymous gifts, streak both ways. Two non-anonymous gifts had non-zero values)
 					monthBeingRedeemed: NonNullable<TagsData['msgParamGiftMonthBeingRedeemed']>;
@@ -588,8 +595,6 @@ export namespace USERNOTICE {
 			};
 		}
 	}
-
-	type GoalContributionType = 'SUB_POINTS' | 'SUBS' | 'NEW_SUB_POINTS' | 'NEW_SUBS';
 
 	// submysterygift
 	// `${string} is gifting ${number} Tier ${number} Subs to ${string}'s community! They've gifted a total of ${number} in the channel!`,
@@ -601,9 +606,6 @@ export namespace USERNOTICE {
 			msgParamCommunityGiftId: string;
 			// These may not be the only values
 			msgParamGiftTheme: 'showlove' | 'party' | 'lul' | 'biblethump';
-			// https://dev.twitch.tv/docs/api/reference/#get-creator-goals
-			// The Helix API lists 5 types. 4 of them being sub related.
-			// "subscription", "subscription_count", "new_subscription", "new_subscription_count"
 			msgParamGoalContributionType?: GoalContributionType;
 			msgParamGoalCurrentContributions?: number;
 			// Description may be omitted if it would be otherwise empty. (User set value)
@@ -635,13 +637,13 @@ export namespace USERNOTICE {
 					userTotal: TagsData['msgParamSenderCount'];
 				};
 			};
-			goal?: {
-				contributionType: NonNullable<TagsData['msgParamGoalContributionType']>;
-				currentContributions: NonNullable<TagsData['msgParamGoalCurrentContributions']>;
-				description: NonNullable<TagsData['msgParamGoalDescription']>;
-				targetContributions: NonNullable<TagsData['msgParamGoalTargetContributions']>;
-				userContributions: NonNullable<TagsData['msgParamGoalUserContributions']>;
-			};
+			goal?: Goal<
+				NonNullable<TagsData['msgParamGoalContributionType']>,
+				NonNullable<TagsData['msgParamGoalDescription']>,
+				NonNullable<TagsData['msgParamGoalCurrentContributions']>,
+				NonNullable<TagsData['msgParamGoalTargetContributions']>,
+				NonNullable<TagsData['msgParamGoalUserContributions']>
+			>;
 		}
 	}
 
@@ -698,13 +700,13 @@ export namespace USERNOTICE {
 					months: TagsData['msgParamGiftMonths'];
 				};
 			};
-			goal?: {
-				contributionType: NonNullable<TagsData['msgParamGoalContributionType']>;
-				currentContributions: NonNullable<TagsData['msgParamGoalCurrentContributions']>;
-				description: NonNullable<TagsData['msgParamGoalDescription']>;
-				targetContributions: NonNullable<TagsData['msgParamGoalTargetContributions']>;
-				userContributions: NonNullable<TagsData['msgParamGoalUserContributions']>;
-			};
+			goal?: Goal<
+				NonNullable<TagsData['msgParamGoalContributionType']>,
+				NonNullable<TagsData['msgParamGoalDescription']>,
+				NonNullable<TagsData['msgParamGoalCurrentContributions']>,
+				NonNullable<TagsData['msgParamGoalTargetContributions']>,
+				NonNullable<TagsData['msgParamGoalUserContributions']>
+			>;
 		}
 	}
 
@@ -795,7 +797,8 @@ export namespace USERNOTICE {
 			priorGifter: SimpleUserMaybeAnonymous<
 				TagsData['msgParamPriorGifterId'],
 				TagsData['msgParamPriorGifterUserName'],
-				TagsData['msgParamPriorGifterDisplayName']
+				TagsData['msgParamPriorGifterDisplayName'],
+				TagsData['msgParamPriorGifterAnonymous']
 			>;
 			recipient?: SimpleUser<
 				MsgId_StandardPayForward.TagsData['msgParamRecipientId'],
@@ -847,7 +850,7 @@ export namespace USERNOTICE {
 	}
 
 	// raid
-	// `${number} raiders from ${string} have joined!"
+	// `${number} raiders from ${string} have joined!`
 	export namespace MsgId_Raid {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'raid';
@@ -877,7 +880,7 @@ export namespace USERNOTICE {
 	}
 
 	// unraid
-	// The raid has been canceled.
+	// `The raid has been canceled.`
 	export namespace MsgId_Unraid {
 		export interface TagsData extends SharedTagsData {
 		}

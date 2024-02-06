@@ -3,11 +3,11 @@ import { _parseTagsMapData, type ETagFuncName } from './tags-data';
 
 export type TagFunc = (badge: string, message: IrcMessage<any>) => any;
 
-export type EmoteIndices = [ number, number ][];
+export type EmoteIndices = [ start: number, end: number ][];
 export type EmotesTag = Map<string, EmoteIndices>;
 
 export interface MessageFlag {
-	index: [ number, number ];
+	index: [ start: number, end: number ];
 	/**
 	 * Flags:
 	 * - `A`: Aggressive Content

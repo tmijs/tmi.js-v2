@@ -46,20 +46,20 @@ type ClientEvents = {
 	CLEARMSG: [ message: CLEARMSG.Message ];
 	CLEARCHAT: [ message: CLEARCHAT.Message ];
 
-	ban: [ event: CLEARCHAT.Event_Ban ];
-	timeout: [ event: CLEARCHAT.Event_Timeout ];
-	chatCleared: [ event: CLEARCHAT.Event_ChatCleared ];
-	deleteMessage: [ event: CLEARMSG.Event ];
-
 	join: [ event: JOIN.Event ];
-
 	part: [ event: PART.Event ];
+
 	roomState: [ event: ROOMSTATE.Event ];
 	emoteOnly: [ event: ROOMSTATE.Event_EmoteOnly ];
 	followersOnly: [ event: ROOMSTATE.Event_FollowersOnly ];
 	uniqueMode: [ event: ROOMSTATE.Event_UniqueMode ];
 	slowMode: [ event: ROOMSTATE.Event_SlowMode ];
 	subsOnly: [ event: ROOMSTATE.Event_SubsOnly ];
+
+	ban: [ event: CLEARCHAT.Event_Ban ];
+	timeout: [ event: CLEARCHAT.Event_Timeout ];
+	chatCleared: [ event: CLEARCHAT.Event_ChatCleared ];
+	deleteMessage: [ event: CLEARMSG.Event ];
 
 	message: [ event: PRIVMSG.Event ];
 
@@ -601,18 +601,18 @@ export class Client extends EventEmitter<ClientEvents> {
 				flags: tags.flags,
 			};
 		};
-		function getGoal(tags: USERNOTICE.MsgId_SubMysteryGift.TagsData | USERNOTICE.MsgId_SubGift.TagsData) {
-			if(tags.msgParamGoalContributionType) {
-				return {
-					contributionType: tags.msgParamGoalContributionType,
-					currentContributions: tags.msgParamGoalCurrentContributions!,
-					// Match the Twitch Helix API so that the description will be an empty string if there's no goal description
-					description: tags.msgParamGoalDescription ?? '',
-					targetContributions: tags.msgParamGoalTargetContributions!,
-					userContributions: tags.msgParamGoalUserContributions!,
-				};
+		function getGoal(tags: USERNOTICE.MsgId_SubMysteryGift.TagsData | USERNOTICE.MsgId_SubGift.TagsData): USERNOTICE.Goal | undefined {
+			if(!tags.msgParamGoalContributionType) {
+				return undefined;
 			}
-			return undefined;
+			return {
+				contributionType: tags.msgParamGoalContributionType,
+				// Match the Twitch Helix API so that the description will be an empty string if there's no goal description
+				description: tags.msgParamGoalDescription ?? '',
+				currentContributions: tags.msgParamGoalCurrentContributions!,
+				targetContributions: tags.msgParamGoalTargetContributions!,
+				userContributions: tags.msgParamGoalUserContributions!,
+			};
 		}
 
 		this.emit('USERNOTICE', e);
