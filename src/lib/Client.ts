@@ -806,11 +806,15 @@ export class Client extends EventEmitter<ClientEvents> {
 				const raid: E['raid'] = {
 					profileImageURL: tags.msgParamProfileImageUrl,
 					getProfileImageURL(size) {
-						if(size <= 0) {
+						if(typeof size === 'undefined') {
+							size = 50;
+						}
+						else if(size <= 0) {
 							throw new Error(`Invalid size: ${size}. Smallest size is 28`);
 						}
 						else if(![ 28, 50, 70, 150, 300, 600 ].includes(size)) {
-							const suggestion = [ 28, 50, 70, 150, 300, 600 ].sort((a, b) => Math.abs(size - a) - Math.abs(size - b))[0];
+							const compare = ((size: number) => (a: number, b: number) => Math.abs(size - a) - Math.abs(size - b))(size);
+							const suggestion = [ 28, 50, 70, 150, 300, 600 ].sort(compare)[0];
 							throw new Error(`Invalid size: ${size}. Based on the input, a suggested size is: ${suggestion}`);
 						}
 						return this.profileImageURL.replace('%s', `${size}x${size}`);

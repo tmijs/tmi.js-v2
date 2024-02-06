@@ -874,7 +874,7 @@ export namespace USERNOTICE {
 				/** Replace "%s" with the resolution of the image ("300x300", "600x600", etc.) */
 				profileImageURL: TagsData['msgParamProfileImageUrl'];
 				/** Generate the profile image URL for the given size. */
-				getProfileImageURL: (size: 28 | 50 | 70 | 150 | 300 | 600) => string;
+				getProfileImageURL: (size?: 28 | 50 | 70 | 150 | 300 | 600) => string;
 			};
 		}
 	}
