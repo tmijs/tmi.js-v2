@@ -55,6 +55,9 @@ export class Token {
 				}
 				this.value = value;
 			}
+			else {
+				throw new Error('No token value or getter function');
+			}
 		}
 		return this.value;
 	}
@@ -64,7 +67,7 @@ export class Token {
 			throw new Error('No token value, may need to call getToken first');
 		}
 		else if(typeof value !== 'string') {
-			throw new Error('Invalid token type ' + typeof value);
+			throw new Error('Invalid token type: ' + typeof value);
 		}
 		if(value.startsWith('oauth:') && value.length > 6) {
 			return value;
@@ -92,6 +95,37 @@ export class Token {
 	}
 	// POST https://id.twitch.tv/oauth2/revoke?${{ token, client_id }}`
 	async revoke() {
-		throw new Error('Not implemented');
+		const { value } = this;
+		if(!value) {
+			throw new Error('No token value');
+		}
+		else if(typeof value !== 'string') {
+			throw new Error('Invalid token type: ' + typeof value);
+		}
+		else if(value === Token.anonymousIrcToken) {
+			throw new Error('Cannot revoke anonymous token');
+		}
+		if(!this.clientId) {
+			await this.validate();
+		}
+		const res = await fetch('https://id.twitch.tv/oauth2/revoke', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			body: new URLSearchParams({
+				token: value,
+				client_id: this.clientId!
+			})
+		});
+		if(res.status !== 200) {
+			const data = await res.json();
+			if('message' in data) {
+				throw new Error(`Failed to revoke token: [${res.status}] ${data.message}`);
+			}
+			else {
+				throw new Error(`Failed to revoke token: [${res.status}] ${res.statusText}`);
+			}
+		}
 	}
 }
