@@ -213,7 +213,7 @@ export namespace PRIVMSG {
 		turbo: boolean;
 		userId: string;
 		userType: UserType;
-		vip: boolean;
+		vip?: boolean;
 	}
 	interface TagsData_Reply extends TagsData {
 		replyParentDisplayName: string;
@@ -266,14 +266,14 @@ export namespace PRIVMSG {
 		badgeInfo: TagsData['badgeInfo'];
 
 		isMod: TagsData['mod'];
-		isVip: TagsData['vip'];
+		isVip: NonNullable<TagsData['vip']>;
 		isSubscriber: TagsData['subscriber'];
 		isFounder: boolean; // founder in badges
 		type: TagsData['userType'];
 
 		isReturningChatter: boolean; // tags returning-chatter
 	}
-	export interface Event_Message<Tags = TagsData> {
+	export interface Event<Tags = TagsData> {
 		channel: Channel;
 		user: User;
 		message: {
@@ -294,7 +294,6 @@ export namespace PRIVMSG {
 		reply(text: string): ReturnType<Client['reply']>;
 		tags: Tags;
 	}
-	export interface Event_Base extends Event_Message {}
 	export interface ReplyParent {
 		id: TagsData_Reply['replyParentMsgId'];
 		text: TagsData_Reply['replyParentMsgBody'];
@@ -325,7 +324,6 @@ export namespace PRIVMSG {
 		type: 'custom';
 		id: TagsData_Reward_Custom['customRewardId'];
 	}
-	export type Event = Event_Message;
 }
 
 /**

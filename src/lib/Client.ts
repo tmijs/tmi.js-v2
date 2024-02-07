@@ -854,6 +854,7 @@ export class Client extends EventEmitter<ClientEvents> {
 	}
 	private onCommand_PRIVMSG(e: PRIVMSG.Message) {
 		this.emit('PRIVMSG', e);
+		type E = PRIVMSG.Event;
 		const { channel: channelName, tags, prefix } = e;
 		const channel = this.getChannel(e);
 		let { params: [ text ] } = e;
@@ -861,7 +862,7 @@ export class Client extends EventEmitter<ClientEvents> {
 		if(isAction) {
 			text = text.slice(8, -1);
 		}
-		const user: PRIVMSG.Event_Message['user'] = {
+		const user: E['user'] = {
 			id: tags.userId,
 			name: prefix.nick,
 			displayName: tags.displayName,
@@ -874,13 +875,13 @@ export class Client extends EventEmitter<ClientEvents> {
 			isMod: tags.mod,
 			isSubscriber: tags.subscriber,
 			isFounder: tags.badges.has('founder'),
-			isVip: tags.vip,
+			isVip: Boolean(tags.vip),
 			type: tags.userType,
 
 			isReturningChatter: tags.returningChatter
 		};
 		const hasMsgId = 'msgId' in tags;
-		const message: PRIVMSG.Event_Message['message'] = {
+		const message: E['message'] = {
 			id: tags.id,
 			text,
 			flags: tags.flags,
@@ -891,7 +892,7 @@ export class Client extends EventEmitter<ClientEvents> {
 			wasAcceptedAfterAutomod: hasMsgId && tags.msgId === '' && tags.customRewardId === '',
 		};
 		const hasParent = 'replyParentMsgId' in tags;
-		let parent: PRIVMSG.Event_Message['parent'] | undefined;
+		let parent: E['parent'] | undefined;
 		if(hasParent) {
 			parent = {
 				id: tags.replyParentMsgId,
@@ -912,11 +913,11 @@ export class Client extends EventEmitter<ClientEvents> {
 			};
 		}
 		const isCheer = 'bits' in tags;
-		let cheer: PRIVMSG.Event_Message['cheer'] | undefined;
+		let cheer: E['cheer'] | undefined;
 		if(isCheer) {
 			cheer = { bits: tags.bits };
 		}
-		let reward: PRIVMSG.Event_Message['reward'] | undefined;
+		let reward: E['reward'] | undefined;
 		const isReward = hasMsgId && (tags.msgId === 'highlighted-message' || tags.msgId === 'skip-subs-mode-message');
 		const isCustomReward = 'customRewardId' in tags && tags.customRewardId !== '';
 		if(isCustomReward) {
