@@ -33,4 +33,8 @@ export class Channel {
 
 export class ChannelTemporary extends Channel {
 	isTemporary: true = true;
+	constructor(name: string, id?: string) {
+		super(name);
+		this.id = id;
+	}
 }

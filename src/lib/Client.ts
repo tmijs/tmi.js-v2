@@ -396,13 +396,16 @@ export class Client extends EventEmitter<ClientEvents> {
 		return this.keepalive.lastLatencyMs;
 	}
 
-	private getChannel(channelName: string | IrcMessage): Channel | ChannelTemporary {
+	private getChannel(channelName: string | IrcMessage, channelId?: string): Channel | ChannelTemporary {
 		if(typeof channelName !== 'string') {
+			if(!channelId) {
+				channelId = channelName.tags.roomId;
+			}
 			channelName = channelName.channel ?? channelName.params[0];
 		}
 		channelName = Channel.normalizeName(channelName);
 		const channel = this.channels.get(channelName);
-		return channel ? channel : new ChannelTemporary(channelName);
+		return channel ? channel : new ChannelTemporary(channelName, channelId);
 	}
 
 	////////////////////////////////////////////////////////////////////////////
