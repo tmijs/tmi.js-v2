@@ -1,105 +1,123 @@
+import type { IrcMessage } from './IrcMessage';
 import { parseTagsFunc, parseTagsMap } from './tags';
-import { IrcMessage } from './IrcMessage';
 
-/** @see https://ircv3.net/specs/extensions/message-tags.html#escaping-values */
-const ircEscapedChars = <const>{
-	's': ' ',
-	'n': '\n',
-	'r': '\r',
-	':': ';',
-	'\\': '\\\\',
-};
-const ircUnescapedChars = <const>{
+/**
+ * @see https://ircv3.net/specs/extensions/message-tags.html#escaping-values
+ */
+const ircEscapedChars = {
+	'\\s': ' ',
+	'\\n': '\n',
+	'\\r': '\r',
+	'\\:': ';',
+	'\\\\': '\\',
+} as const;
+const ircUnescapedChars = {
 	' ': 's',
 	'\n': 'n',
 	'\r': 'r',
 	';': ':',
-	'\\\\': '\\',
-};
+	'\\': '\\\\',
+} as const;
 
 export function unescapeIrc(value: string) {
-	if(!value || !value.includes('\\')) {
+	if (!value || !value.includes('\\')) {
 		return value;
 	}
-	return value.replace(/\\[snr;\\]/g, match => ircEscapedChars[match[1] as keyof typeof ircEscapedChars]);
+
+	return value.replaceAll(/\\[:\\nrs]/g, (match) => ircEscapedChars[match[1] as keyof typeof ircEscapedChars]);
 }
 
-export function escapeIrc(value: string | number) {
-	if(typeof value === 'number') {
-		value = value.toString();
-	}
-	return value.replace(/[\s\n\r;\\]/g, match => '\\' + ircUnescapedChars[match as keyof typeof ircUnescapedChars] || match);
+export function escapeIrc(value: number | string) {
+	const stringValue = `${value}`;
+	return stringValue.replaceAll(
+		/[\s;\\]/g,
+		(match) => '\\' + ircUnescapedChars[match as keyof typeof ircUnescapedChars] || match,
+	);
 }
 
 export function parseIrcLine(line: string): IrcMessage | undefined {
-	if(!line) {
+	if (!line) {
 		return;
 	}
-	const getNextSpace = () => line.indexOf(' ');
+
+	let workingLine = line;
+
+	const getNextSpace = () => workingLine.indexOf(' ');
 	const getNextSpaceOrEnd = () => {
 		const nextSpace = getNextSpace();
-		return nextSpace === -1 ? line.length : nextSpace;
+		return nextSpace === -1 ? workingLine.length : nextSpace;
 	};
-	const advanceToNextSpaceOrEnd = (spaceIndex = getNextSpaceOrEnd()) => line = line.slice(spaceIndex + 1);
-	const firstCharIs = (char: string) => line[0] === char;
-	const raw = line;
+
+	const advanceToNextSpaceOrEnd = (spaceIndex = getNextSpaceOrEnd()) => {
+		workingLine = workingLine.slice(spaceIndex + 1);
+	};
+
+	const firstCharIs = (char: string) => workingLine.startsWith(char);
+	const raw = workingLine;
 	const rawTags: IrcMessage['rawTags'] = {};
 	const tags: IrcMessage['tags'] = {};
 	let tagsRaw: string[] = [];
-	if(firstCharIs('@')) {
-		tagsRaw = line.split(' ', 1)[0].slice(1).split(';');
+	if (firstCharIs('@')) {
+		tagsRaw = workingLine.split(' ', 1)[0].slice(1).split(';');
 		advanceToNextSpaceOrEnd();
 	}
+
 	const prefix: IrcMessage['prefix'] = { nick: undefined, user: undefined, host: undefined };
-	if(firstCharIs(':')) {
+	if (firstCharIs(':')) {
 		const nextSpace = getNextSpace();
-		const prefixRaw = line.slice(1, nextSpace);
-		if(prefixRaw.includes('!')) {
-			[ prefix.nick, prefix.user ] = prefixRaw.split('!');
-			if(prefix.user.includes('@')) {
-				[ prefix.user, prefix.host ] = prefix.user.split('@');
+		const prefixRaw = workingLine.slice(1, nextSpace);
+		if (prefixRaw.includes('!')) {
+			[prefix.nick, prefix.user] = prefixRaw.split('!');
+			if (prefix.user.includes('@')) {
+				[prefix.user, prefix.host] = prefix.user.split('@');
 			}
-		}
-		else if(prefixRaw.includes('@')) {
-			[ prefix.nick, prefix.host ] = prefixRaw.split('@');
-		}
-		else {
+		} else if (prefixRaw.includes('@')) {
+			[prefix.nick, prefix.host] = prefixRaw.split('@');
+		} else {
 			prefix.host = prefixRaw;
 		}
+
 		advanceToNextSpaceOrEnd(nextSpace);
 	}
-	const command = line.split(' ', 1)[0] as IrcMessage['command'];
+
+	const command = workingLine.split(' ', 1)[0] as IrcMessage['command'];
 	advanceToNextSpaceOrEnd();
 	let channel: IrcMessage['channel'];
-	if(firstCharIs('#')) {
-		channel = line.split(' ', 1)[0] as IrcMessage['channel'];
+	if (firstCharIs('#')) {
+		channel = workingLine.split(' ', 1)[0] as IrcMessage['channel'];
 		advanceToNextSpaceOrEnd();
 	}
+
 	const params: string[] = [];
-	while(line.length) {
-		if(firstCharIs(':')) {
-			params.push(line.slice(1));
+	while (workingLine.length) {
+		if (firstCharIs(':')) {
+			params.push(workingLine.slice(1));
 			break;
 		}
+
 		const nextSpace = getNextSpace();
-		params.push(line.slice(0, nextSpace));
+		params.push(workingLine.slice(0, nextSpace));
 		advanceToNextSpaceOrEnd(nextSpace);
 	}
+
 	const unknownTagMap = new Map();
 	const message: IrcMessage = { raw, prefix, command, channel, params, rawTags, tags };
-	for(const tag of tagsRaw) {
-		const [ key, value ] = tag.split('=');
-		if(!parseTagsMap.has(key)) {
+	for (const tag of tagsRaw) {
+		const [key, value] = tag.split('=');
+		if (!parseTagsMap.has(key)) {
 			console.warn('Unknown tag:', { key, value });
 			unknownTagMap.set(key, value);
 		}
+
 		const unescapedValue = unescapeIrc(value);
 		rawTags[key] = unescapedValue;
-		const [ name, parseFunc ] = parseTagsMap.get(key) ?? [ key, parseTagsFunc.string ];
+		const [name, parseFunc] = parseTagsMap.get(key) ?? [key, parseTagsFunc.string];
 		tags[name] = parseFunc(unescapedValue, message);
 	}
-	if(unknownTagMap.size) {
+
+	if (unknownTagMap.size) {
 		message.unknownTags = unknownTagMap;
 	}
+
 	return message;
 }

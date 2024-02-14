@@ -1,39 +1,49 @@
-import { ChannelString } from './irc/IrcMessage';
-import { ROOMSTATE } from './irc/commands';
+import type { ChannelString } from './irc/IrcMessage';
+import type { ROOMSTATE } from './irc/commands';
 
 export class Channel {
-	name: string;
-	id?: string;
-	roomState?: ROOMSTATE.TagsData;
-	isJoined: boolean;
-	constructor(name: string) {
+	public name: string;
+
+	public id?: string;
+
+	public roomState?: ROOMSTATE.TagsData;
+
+	public isJoined: boolean;
+
+	public constructor(name: string) {
 		this.name = Channel.normalizeName(name);
 		this.isJoined = false;
 	}
+
 	/**
 	 * Normalize a channel name. This will remove the leading # if present.
 	 */
-	static normalizeName(name: string | ChannelString | Channel): string {
-		if(name instanceof Channel) {
+	public static normalizeName(name: Channel | ChannelString | string): string {
+		if (name instanceof Channel) {
 			return name.name;
 		}
-		if(typeof name !== 'string') {
+
+		if (typeof name !== 'string') {
+			throw new TypeError('Invalid channel name');
+		}
+
+		const formattedName = name.trim().toLowerCase();
+		if (!formattedName) {
 			throw new Error('Invalid channel name');
 		}
-		name = name.trim().toLowerCase();
-		if(!name) {
-			throw new Error('Invalid channel name');
+
+		if (formattedName.startsWith('#')) {
+			return formattedName.slice(1);
 		}
-		if(name.startsWith('#')) {
-			return name.slice(1);
-		}
-		return name;
+
+		return formattedName;
 	}
 }
 
 export class ChannelTemporary extends Channel {
-	isTemporary: true = true;
-	constructor(name: string, id?: string) {
+	public readonly isTemporary = true;
+
+	public constructor(name: string, id?: string) {
 		super(name);
 		this.id = id;
 	}

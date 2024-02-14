@@ -1,7 +1,7 @@
-import { Channel } from '../Channel';
-import { Client } from '../Client';
-import { IrcMessage, ChannelString, TagsDataType } from './IrcMessage';
-import { EmotesTag, MessageFlag } from './tags';
+import type { Channel } from '../Channel';
+import type { Client } from '../Client';
+import type { IrcMessage, ChannelString, TagsDataType } from './IrcMessage';
+import type { EmotesTag, MessageFlag } from './tags';
 
 interface BadgesData {
 	bits?: string;
@@ -14,14 +14,14 @@ interface BadgesData {
 	vip?: string;
 }
 interface BadgesInfoData {
-	subscriber?: string;
 	founder?: string;
+	subscriber?: string;
 }
 
 export interface Badges<Data = BadgesData> extends Map<keyof Data, unknown> {
 	get<Key extends keyof Data>(key: Key): Data[Key];
-	set<Key extends keyof Data>(key: Key, value: Data[Key]): this;
 	has<Key extends keyof Data>(key: Key): boolean;
+	set<Key extends keyof Data>(key: Key, value: Data[Key]): this;
 }
 
 /**
@@ -37,13 +37,13 @@ export type SubPlan = '1000' | '2000' | '3000' | 'Prime';
 export type SubTier = 1 | 2 | 3;
 
 interface PrefixHostOnly {
+	host: string;
 	nick: undefined;
 	user: undefined;
-	host: string;
 }
-type PrefixFull = Record<'nick' | 'user' | 'host', string>;
+type PrefixFull = Record<'host' | 'nick' | 'user', string>;
 
-export namespace GLOBALUSERSTATE {
+export declare namespace GLOBALUSERSTATE {
 	export interface TagsData {
 		badgeInfo: BadgeInfo;
 		badges: Badges;
@@ -55,12 +55,12 @@ export namespace GLOBALUSERSTATE {
 	}
 	export interface Message extends IrcMessage<'GLOBALUSERSTATE', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixHostOnly;
 		params: [];
+		prefix: PrefixHostOnly;
 	}
 }
 
-export namespace USERSTATE {
+export declare namespace USERSTATE {
 	export interface TagsData {
 		badgeInfo: BadgeInfo;
 		badges: Badges;
@@ -78,12 +78,12 @@ export namespace USERSTATE {
 	}
 	export interface Message extends IrcMessage<'USERSTATE', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixHostOnly;
 		params: [];
+		prefix: PrefixHostOnly;
 	}
 }
 
-export namespace ROOMSTATE {
+export declare namespace ROOMSTATE {
 	export interface TagsData {
 		/**
 		 * Determines whether the chat room only allows messages with emotes.
@@ -116,14 +116,14 @@ export namespace ROOMSTATE {
 	}
 	export interface Message extends IrcMessage<'ROOMSTATE', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixHostOnly;
 		params: [];
+		prefix: PrefixHostOnly;
 	}
 	export interface Event {
-		channel: Channel;
-		state: TagsData;
-		isInitial: boolean;
 		change: Partial<Omit<TagsData, 'roomId'>>;
+		channel: Channel;
+		isInitial: boolean;
+		state: TagsData;
 	}
 
 	export interface IndividualEvent<State> {
@@ -139,13 +139,13 @@ export namespace ROOMSTATE {
 	export type Event_SubsOnly = IndividualEvent<TagsData['subsOnly']>;
 }
 
-export namespace JOIN {
-	export interface TagsData {
-	}
+export declare namespace JOIN {
+	// eslint-disable-next-line @typescript-eslint/no-empty-interface
+	export interface TagsData {}
 	export interface Message extends IrcMessage<'JOIN', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixFull;
 		params: [];
+		prefix: PrefixFull;
 	}
 	export interface Event {
 		channel: Channel;
@@ -155,13 +155,13 @@ export namespace JOIN {
 		};
 	}
 }
-export namespace PART {
-	export interface TagsData {
-	}
+export declare namespace PART {
+	// eslint-disable-next-line @typescript-eslint/no-empty-interface
+	export interface TagsData {}
 	export interface Message extends IrcMessage<'PART', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixFull;
 		params: [];
+		prefix: PrefixFull;
 	}
 	export interface Event {
 		channel: Channel;
@@ -172,18 +172,18 @@ export namespace PART {
 	}
 }
 
-export namespace NOTICE {
+export declare namespace NOTICE {
 	export interface TagsData {
 		msgId: string;
 	}
 	export interface Message extends IrcMessage<'NOTICE', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixFull;
 		params: string[];
+		prefix: PrefixFull;
 	}
 }
 
-export namespace PRIVMSG {
+export declare namespace PRIVMSG {
 	/**
 	 * The msg-id and custom-reward-id tags can be set to empty string at the
 	 * same time for messages that were held for review by automod and then
@@ -221,10 +221,10 @@ export namespace PRIVMSG {
 		replyParentMsgId: string;
 		replyParentUserId: string;
 		replyParentUserLogin: string;
-		replyThreadParentMsgId: string;
-		replyThreadParentUserLogin: string;
 		replyThreadParentDisplayName: string;
+		replyThreadParentMsgId: string;
 		replyThreadParentUserId: string;
+		replyThreadParentUserLogin: string;
 	}
 	interface TagsData_Cheer extends TagsData {
 		bits: number;
@@ -244,17 +244,30 @@ export namespace PRIVMSG {
 	}
 	// TODO: Will replies and custom rewards still work with being automod accepted?
 	interface TagsData_AutomodAccepted extends TagsData {
-		msgId: '';
 		customRewardId: '';
+		msgId: '';
 	}
 
-	////////////////////////////////////////////////////////////////////////////
+	/// /////////////////////////////////////////////////////////////////////////
 
-	export interface Message extends IrcMessage<'PRIVMSG', TagsData | TagsData_Reply | TagsData_Cheer | TagsData_Introduction | TagsData_Reward_Custom | TagsData_Reward_Highlighted | TagsData_Reward_SkipSubsMode | TagsData_AutomodAccepted> {
+	export interface Message
+		extends IrcMessage<
+			'PRIVMSG',
+			| TagsData
+			| TagsData_AutomodAccepted
+			| TagsData_Cheer
+			| TagsData_Introduction
+			| TagsData_Reply
+			| TagsData_Reward_Custom
+			| TagsData_Reward_Highlighted
+			| TagsData_Reward_SkipSubsMode
+		> {
 		channel: ChannelString;
+		params: [string];
 		prefix: PrefixFull;
-		params: [ string ];
 	}
+
+	/* eslint-disable typescript-sort-keys/interface */
 	export interface User {
 		id: TagsData['userId'];
 		name: Message['prefix']['nick'];
@@ -273,42 +286,43 @@ export namespace PRIVMSG {
 
 		isReturningChatter: boolean; // tags returning-chatter
 	}
+	/* eslint-enable typescript-sort-keys/interface */
 	export interface Event<Tags = TagsData> {
 		channel: Channel;
-		user: User;
+		cheer?: Cheer; // tags bits
 		message: {
-			id: TagsData['id'];
-			text: Message['params'][0];
-			flags: TagsData['flags'];
 			emotes: TagsData['emotes'];
+			flags: TagsData['flags'];
+			id: TagsData['id'];
 			isAction: boolean; // Text starts with \x01ACTION and ends with \x01
-			isIntroduction: boolean; // msg-id=user-intro
 			isFirstMessageByUser: boolean; // tags first-msg
+			isIntroduction: boolean; // msg-id=user-intro
+			text: Message['params'][0];
 			wasAcceptedAfterAutomod: boolean; // msg-id= and custom-reward-id=
 		};
-		cheer?: Cheer; // tags bits
 		parent?: ReplyParent; // tags has reply-parent-msg-id
-		reward?: Reward_Custom | Reward_HighlightedMessage | Reward_SkipSubsModeMessage;
 		// TODO: Implement returning Event_Reply
 		// reply(text: string): Promise<Event_Reply>;
 		reply(text: string): ReturnType<Client['reply']>;
+		reward?: Reward_Custom | Reward_HighlightedMessage | Reward_SkipSubsModeMessage;
 		tags: Tags;
+		user: User;
 	}
 	export interface ReplyParent {
 		id: TagsData_Reply['replyParentMsgId'];
 		text: TagsData_Reply['replyParentMsgBody'];
-		user: {
-			id: TagsData_Reply['replyParentUserId'];
-			name: TagsData_Reply['replyParentUserLogin'];
-			displayName: TagsData_Reply['replyParentDisplayName'];
-		};
 		thread: {
 			id: TagsData_Reply['replyThreadParentMsgId'];
 			user: {
+				displayName: TagsData_Reply['replyThreadParentDisplayName'];
 				id: TagsData_Reply['replyThreadParentUserId'];
 				name: TagsData_Reply['replyThreadParentUserLogin'];
-				displayName: TagsData_Reply['replyThreadParentDisplayName'];
 			};
+		};
+		user: {
+			displayName: TagsData_Reply['replyParentDisplayName'];
+			id: TagsData_Reply['replyParentUserId'];
+			name: TagsData_Reply['replyParentUserLogin'];
 		};
 	}
 	export interface Cheer {
@@ -321,15 +335,15 @@ export namespace PRIVMSG {
 		type: 'skip-subs-mode-message';
 	}
 	interface Reward_Custom {
-		type: 'custom';
 		id: TagsData_Reward_Custom['customRewardId'];
+		type: 'custom';
 	}
 }
 
 /**
  * An individually deleted message.
  */
-export namespace CLEARMSG {
+export declare namespace CLEARMSG {
 	export interface TagsData {
 		login: string;
 		roomId: '';
@@ -338,29 +352,29 @@ export namespace CLEARMSG {
 	}
 	export interface Message extends IrcMessage<'CLEARMSG', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixHostOnly;
 		/**
 		 * The text of the message that was deleted.
 		 */
-		params: [ string ];
+		params: [string];
+		prefix: PrefixHostOnly;
 	}
 	export interface Event {
 		channel: Channel;
-		user: {
-			name: TagsData['login'];
-		};
 		message: {
 			id: TagsData['targetMsgId'];
 			text: Message['params'][0];
 		};
 		timestamp: TagsData['tmiSentTs'];
+		user: {
+			name: TagsData['login'];
+		};
 	}
 }
 
 /**
  * A user was banned or timed out.
  */
-export namespace CLEARCHAT {
+export declare namespace CLEARCHAT {
 	export interface TagsData {
 		banDuration?: number;
 		roomId: string;
@@ -369,14 +383,16 @@ export namespace CLEARCHAT {
 	}
 	export interface Message extends IrcMessage<'CLEARCHAT', TagsData> {
 		channel: ChannelString;
-		prefix: PrefixHostOnly;
 		/**
 		 * The username of the user that was banned or timed out.
 		 */
-		params: [ string ] | [];
+		params: [] | [string];
+		prefix: PrefixHostOnly;
 	}
 	export interface Event_Ban {
 		channel: Channel;
+		tags: Omit<Required<TagsData>, 'banDuration'>;
+		timestamp: TagsData['tmiSentTs'];
 		/**
 		 * The user that was banned.
 		 */
@@ -384,11 +400,15 @@ export namespace CLEARCHAT {
 			id: TagsData['targetUserId'];
 			name: Message['params'][0];
 		};
-		timestamp: TagsData['tmiSentTs'];
-		tags: Omit<Required<TagsData>, 'banDuration'>;
 	}
 	export interface Event_Timeout {
+		/**
+		 * The duration of the timeout in seconds.
+		 */
+		banSeconds: NonNullable<TagsData['banDuration']>;
 		channel: Channel;
+		tags: Required<TagsData>;
+		timestamp: TagsData['tmiSentTs'];
 		/**
 		 * The user that was timed out.
 		 */
@@ -396,21 +416,15 @@ export namespace CLEARCHAT {
 			id: TagsData['targetUserId'];
 			name: Message['params'][0];
 		};
-		/**
-		 * The duration of the timeout in seconds.
-		 */
-		banSeconds: NonNullable<TagsData['banDuration']>;
-		timestamp: TagsData['tmiSentTs'];
-		tags: Required<TagsData>;
 	}
 	export interface Event_ChatCleared {
 		channel: Channel;
-		timestamp: TagsData['tmiSentTs'];
 		tags: Omit<TagsData, 'banDuration' | 'targetUserId'>;
+		timestamp: TagsData['tmiSentTs'];
 	}
 }
 
-export namespace USERNOTICE {
+export declare namespace USERNOTICE {
 	export interface SharedTagsData {
 		badgeInfo: BadgeInfo;
 		badges: Badges;
@@ -423,19 +437,22 @@ export namespace USERNOTICE {
 		mod: boolean;
 		roomId: string;
 		subscriber: boolean;
+		systemMsg: string;
 		tmiSentTs: number;
 		userId: string;
 		userType: UserType;
-		systemMsg: string;
 	}
 	export interface SimpleUser<ID = string, Name = string, DisplayName = string> {
+		displayName: DisplayName;
 		id: ID;
 		name: Name;
-		displayName: DisplayName;
 	}
-	export interface SimpleUserMaybeAnonymous<ID = string, Name = string, DisplayName = string, AnonymousReason = boolean> extends SimpleUser<ID, Name, DisplayName> {
+	export interface SimpleUserMaybeAnonymous<ID = string, Name = string, DisplayName = string, AnonymousReason = boolean>
+		extends SimpleUser<ID, Name, DisplayName> {
 		isAnonymous: AnonymousReason;
 	}
+
+	/* eslint-disable typescript-sort-keys/interface */
 	export interface User<TagsData extends SharedTagsData = SharedTagsData> {
 		id: TagsData['userId'];
 		name: TagsData['login'];
@@ -450,7 +467,10 @@ export namespace USERNOTICE {
 		isSubscriber: TagsData['subscriber'];
 		type: TagsData['userType'];
 	}
-	export type UserMaybeAnonymous<TagsData extends SharedTagsData = SharedTagsData> = User<TagsData> & { isAnonymous: boolean; };
+	/* eslint-enable typescript-sort-keys/interface */
+	export type UserMaybeAnonymous<TagsData extends SharedTagsData = SharedTagsData> = User<TagsData> & {
+		isAnonymous: boolean;
+	};
 	export interface SystemMessage {
 		id: SharedTagsData['id'];
 		system: SharedTagsData['systemMsg'];
@@ -462,48 +482,47 @@ export namespace USERNOTICE {
 	// TODO: Can the message be automodded?
 	// wasAcceptedAfterAutomod: boolean;
 	export interface UserMessage extends SystemMessage {
-		text: string;
 		emotes: SharedTagsData['emotes'];
 		flags: SharedTagsData['flags'];
+		text: string;
 	}
 	export interface SubscriptionPlanFull {
+		isPrime: boolean;
 		name: string;
 		plan: SubPlan;
 		tier: SubTier;
-		isPrime: boolean;
-	};
+	}
 	export interface SubscriptionPlanNoName {
+		isPrime: boolean;
 		name: undefined;
 		plan: SubPlan;
 		tier: SubTier;
-		isPrime: boolean;
-	};
+	}
 	export interface SubscriptionPlanEmpty {
+		isPrime: boolean;
 		name: undefined;
 		plan: undefined;
 		tier: undefined;
-		isPrime: boolean;
-	};
+	}
 	export interface BaseMessage<TagsData extends TagsDataType> extends IrcMessage<'USERNOTICE', TagsData> {
 		channel: ChannelString;
 		prefix: PrefixHostOnly;
 	}
-	export interface Message extends BaseMessage<SharedTagsData> {
-	}
+	export interface Message extends BaseMessage<SharedTagsData> {}
 	// https://dev.twitch.tv/docs/api/reference/#get-creator-goals
 	// The Helix API lists 5 types. 4 of them being sub related.
 	// "subscription", "subscription_count", "new_subscription", "new_subscription_count"
-	export type GoalContributionType = 'SUB_POINTS' | 'SUBS' | 'NEW_SUB_POINTS' | 'NEW_SUBS';
+	export type GoalContributionType = 'NEW_SUB_POINTS' | 'NEW_SUBS' | 'SUB_POINTS' | 'SUBS';
 	export interface Goal<
 		Type extends GoalContributionType = GoalContributionType,
 		Description extends string = string,
 		Current extends number = number,
 		Target extends number = number,
-		User extends number = number
+		User extends number = number,
 	> {
 		contributionType: Type;
-		description: Description;
 		currentContributions: Current;
+		description: Description;
 		targetContributions: Target;
 		userContributions: User;
 	}
@@ -518,23 +537,23 @@ export namespace USERNOTICE {
 			msgParamMultimonthDuration: number; // 1, 3, 6, ?
 			msgParamMultimonthTenure: 0; // Always 0
 			msgParamShouldShareStreak: false; // Always false
-			msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
+			msgParamSubPlanName: string;
 			msgParamWasGifted: false; // Always false
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
-			params: [ string ];
+		export interface Message extends BaseMessage<TagsData> {
+			params: [string];
 		}
 		export interface Event {
 			channel: Channel;
-			user: User;
 			message: SystemMessage;
 			subscription: {
-				plan: SubscriptionPlanFull;
 				multiMonth: {
 					duration: TagsData['msgParamMultimonthDuration'];
 				};
+				plan: SubscriptionPlanFull;
 			};
+			user: User;
 		}
 	}
 
@@ -559,45 +578,45 @@ export namespace USERNOTICE {
 			msgParamMultimonthTenure?: number; // 0
 			msgParamShouldShareStreak: boolean;
 			msgParamStreakMonths?: number;
-			msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
+			msgParamSubPlanName: string;
 			msgParamWasGifted: boolean;
 			systemMsg: string;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
-			params: [ string ];
+		export interface Message extends BaseMessage<TagsData> {
+			params: [string];
 		}
 		export interface Event {
 			channel: Channel;
-			user: User;
 			message: UserMessage;
 			subscription: {
 				cumulativeMonths: TagsData['msgParamCumulativeMonths'];
-				plan: SubscriptionPlanFull;
-				multiMonth: {
-					duration: TagsData['msgParamMultimonthDuration'];
-					tenure: TagsData['msgParamMultimonthTenure'];
-				};
-				streak?: {
-					months: NonNullable<TagsData['msgParamStreakMonths']>;
-				}
 				gift?: {
 					gifter: SimpleUserMaybeAnonymous<
-							NonNullable<TagsData['msgParamGifterId']>,
-							NonNullable<TagsData['msgParamGifterLogin']>,
-							NonNullable<TagsData['msgParamGifterName']>,
-							NonNullable<TagsData['msgParamAnonGift']>
+						NonNullable<TagsData['msgParamGifterId']>,
+						NonNullable<TagsData['msgParamGifterLogin']>,
+						NonNullable<TagsData['msgParamGifterName']>,
+						NonNullable<TagsData['msgParamAnonGift']>
 					>;
 					// User is at month monthBeingRedeemed (1, 2, 3, ..., 11, 12) out of msgParamGiftMonths (3, 6, 12) months
 					// Value can be 0 (at least in two cases of anonymous gifts, streak both ways. Two non-anonymous gifts had non-zero values)
 					monthBeingRedeemed: NonNullable<TagsData['msgParamGiftMonthBeingRedeemed']>;
 					months: NonNullable<TagsData['msgParamGiftMonths']>;
 				};
+				multiMonth: {
+					duration: TagsData['msgParamMultimonthDuration'];
+					tenure: TagsData['msgParamMultimonthTenure'];
+				};
+				plan: SubscriptionPlanFull;
+				streak?: {
+					months: NonNullable<TagsData['msgParamStreakMonths']>;
+				};
 			};
+			user: User;
 		}
 	}
 
-	type GiftTheme = 'showlove' | 'party' | 'lul' | 'biblethump';
+	type GiftTheme = 'biblethump' | 'lul' | 'party' | 'showlove';
 
 	// submysterygift
 	// `${string} is gifting ${number} Tier ${number} Subs to ${string}'s community! They've gifted a total of ${number} in the channel!`,
@@ -623,24 +642,11 @@ export namespace USERNOTICE {
 			// msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 		export interface Event {
 			channel: Channel;
-			user: UserMaybeAnonymous;
-			message: SystemMessage;
-			subscription: {
-				plan: SubscriptionPlanNoName;
-				mysteryGift: {
-					id: TagsData['msgParamCommunityGiftId'];
-					// Number of gifts
-					count: TagsData['msgParamMassGiftCount'];
-					// Lifetime
-					userTotal: TagsData['msgParamSenderCount'];
-					theme: TagsData['msgParamGiftTheme'];
-				};
-			};
 			goal?: Goal<
 				NonNullable<TagsData['msgParamGoalContributionType']>,
 				NonNullable<TagsData['msgParamGoalDescription']>,
@@ -648,6 +654,19 @@ export namespace USERNOTICE {
 				NonNullable<TagsData['msgParamGoalTargetContributions']>,
 				NonNullable<TagsData['msgParamGoalUserContributions']>
 			>;
+			message: SystemMessage;
+			subscription: {
+				mysteryGift: {
+					// Number of gifts
+					count: TagsData['msgParamMassGiftCount'];
+					id: TagsData['msgParamCommunityGiftId'];
+					theme: TagsData['msgParamGiftTheme'];
+					// Lifetime
+					userTotal: TagsData['msgParamSenderCount'];
+				};
+				plan: SubscriptionPlanNoName;
+			};
+			user: UserMaybeAnonymous;
 		}
 	}
 
@@ -675,36 +694,14 @@ export namespace USERNOTICE {
 			msgParamRecipientId: string;
 			msgParamRecipientUserName: string;
 			msgParamSenderCount?: number;
-			msgParamSubPlanName: string;
 			msgParamSubPlan: SubPlan;
+			msgParamSubPlanName: string;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 		export interface Event {
 			channel: Channel;
-			user: UserMaybeAnonymous<TagsData>;
-			message: SystemMessage;
-			recipient: SimpleUser<
-				TagsData['msgParamRecipientId'],
-				TagsData['msgParamRecipientUserName'],
-				TagsData['msgParamRecipientDisplayName']
-			>;
-			subscription: {
-				plan: SubscriptionPlanFull;
-				mysteryGift?: {
-					id: TagsData['msgParamCommunityGiftId'];
-					// Lifetime; undefined for AnAnonymousGifter
-					userTotal: TagsData['msgParamSenderCount'];
-					theme: TagsData['msgParamGiftTheme'];
-				};
-				gift: {
-					// Number of gifts
-					// count: TagsData['msgParamGiftMonths'];
-					// Months gifted
-					months: TagsData['msgParamGiftMonths'];
-				};
-			};
 			goal?: Goal<
 				NonNullable<TagsData['msgParamGoalContributionType']>,
 				NonNullable<TagsData['msgParamGoalDescription']>,
@@ -712,6 +709,28 @@ export namespace USERNOTICE {
 				NonNullable<TagsData['msgParamGoalTargetContributions']>,
 				NonNullable<TagsData['msgParamGoalUserContributions']>
 			>;
+			message: SystemMessage;
+			recipient: SimpleUser<
+				TagsData['msgParamRecipientId'],
+				TagsData['msgParamRecipientUserName'],
+				TagsData['msgParamRecipientDisplayName']
+			>;
+			subscription: {
+				gift: {
+					// Number of gifts
+					// count: TagsData['msgParamGiftMonths'];
+					// Months gifted
+					months: TagsData['msgParamGiftMonths'];
+				};
+				mysteryGift?: {
+					id: TagsData['msgParamCommunityGiftId'];
+					theme: TagsData['msgParamGiftTheme'];
+					// Lifetime; undefined for AnAnonymousGifter
+					userTotal: TagsData['msgParamSenderCount'];
+				};
+				plan: SubscriptionPlanFull;
+			};
+			user: UserMaybeAnonymous<TagsData>;
 		}
 	}
 
@@ -724,7 +743,7 @@ export namespace USERNOTICE {
 			msgParamSenderLogin: string;
 			msgParamSenderName: string;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 	}
@@ -743,17 +762,17 @@ export namespace USERNOTICE {
 		export type TagsData = MsgId_GiftPaidUpgrade.TagsData | MsgId_PrimePaidUpgrade.TagsData;
 		export interface Event {
 			channel: Channel;
-			user: User;
-			message: SystemMessage;
-			type: 'gift' | 'prime';
 			gifter?: SimpleUser<
 				undefined,
 				MsgId_GiftPaidUpgrade.TagsData['msgParamSenderLogin'],
 				MsgId_GiftPaidUpgrade.TagsData['msgParamSenderName']
 			>;
+			message: SystemMessage;
 			subscription?: {
 				plan: SubscriptionPlanNoName;
 			};
+			type: 'gift' | 'prime';
+			user: User;
 		}
 	}
 
@@ -766,7 +785,7 @@ export namespace USERNOTICE {
 			msgParamRecipientId: string;
 			msgParamRecipientUserName: string;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 	}
@@ -777,7 +796,7 @@ export namespace USERNOTICE {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'communitypayforward';
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 	}
@@ -790,15 +809,14 @@ export namespace USERNOTICE {
 			msgParamPriorGifterId: string;
 			msgParamPriorGifterUserName: string;
 		}
-		export type TagsData = (MsgId_StandardPayForward.TagsData | MsgId_CommunityPayForward.TagsData) & PayForwardTagsData;
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export type TagsData = PayForwardTagsData &
+			(MsgId_CommunityPayForward.TagsData | MsgId_StandardPayForward.TagsData);
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 		export interface Event {
 			channel: Channel;
-			user: User;
 			message: SystemMessage;
-			type: 'standard' | 'community';
 			priorGifter: SimpleUserMaybeAnonymous<
 				TagsData['msgParamPriorGifterId'],
 				TagsData['msgParamPriorGifterUserName'],
@@ -810,6 +828,8 @@ export namespace USERNOTICE {
 				MsgId_StandardPayForward.TagsData['msgParamRecipientUserName'],
 				MsgId_StandardPayForward.TagsData['msgParamRecipientDisplayName']
 			>;
+			type: 'community' | 'standard';
+			user: User;
 		}
 	}
 
@@ -821,16 +841,16 @@ export namespace USERNOTICE {
 			// 1000, 25000, etc.
 			msgParamThreshold: number;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
-			params: [ string ];
+		export interface Message extends BaseMessage<TagsData> {
+			params: [string];
 		}
 		export interface Event {
-			channel: Channel;
-			user: User;
-			message: UserMessage;
 			badge: {
 				threshold: TagsData['msgParamThreshold'];
 			};
+			channel: Channel;
+			message: UserMessage;
+			user: User;
 		}
 	}
 
@@ -838,19 +858,19 @@ export namespace USERNOTICE {
 	export namespace MsgId_Announcement {
 		export interface TagsData extends SharedTagsData {
 			msgId: 'announcement';
-			msgParamColor: 'PRIMARY' | 'ORANGE' | 'GREEN' | 'BLUE' | 'PURPLE';
+			msgParamColor: 'BLUE' | 'GREEN' | 'ORANGE' | 'PRIMARY' | 'PURPLE';
 			systemMsg: '';
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
-			params: [ string ];
+		export interface Message extends BaseMessage<TagsData> {
+			params: [string];
 		}
 		export interface Event {
-			channel: Channel;
-			user: User;
-			message: UserMessage;
 			announcement: {
 				color: TagsData['msgParamColor'];
 			};
+			channel: Channel;
+			message: UserMessage;
+			user: User;
 		}
 	}
 
@@ -867,35 +887,34 @@ export namespace USERNOTICE {
 			msgParamProfileImageUrl: string;
 			msgParamViewerCount: number;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 		export interface Event {
 			channel: Channel;
-			user: User;
 			message: SystemMessage;
 			raid: {
-				viewerCount: TagsData['msgParamViewerCount'];
-				/** Replace "%s" with the resolution of the image ("300x300", "600x600", etc.) */
+				/* Generate the profile image URL for the given size. */
+				getProfileImageURL(size?: 28 | 50 | 70 | 150 | 300 | 600): string;
+				/* Replace "%s" with the resolution of the image ("300x300", "600x600", etc.) */
 				profileImageURL: TagsData['msgParamProfileImageUrl'];
-				/** Generate the profile image URL for the given size. */
-				getProfileImageURL: (size?: 28 | 50 | 70 | 150 | 300 | 600) => string;
+				viewerCount: TagsData['msgParamViewerCount'];
 			};
+			user: User;
 		}
 	}
 
 	// unraid
 	// `The raid has been canceled.`
 	export namespace MsgId_Unraid {
-		export interface TagsData extends SharedTagsData {
-		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface TagsData extends SharedTagsData {}
+		export interface Message extends BaseMessage<TagsData> {
 			params: [];
 		}
 		export interface Event {
 			channel: Channel;
-			user: User;
 			message: SystemMessage;
+			user: User;
 		}
 	}
 
@@ -912,18 +931,18 @@ export namespace USERNOTICE {
 			// For watch-streak it's a number, like: 3, 5, 7, 10, 15, ..., 65, 70
 			msgParamValue: number;
 		}
-		export interface Message extends USERNOTICE.BaseMessage<TagsData> {
+		export interface Message extends BaseMessage<TagsData> {
 			params: string[];
 		}
 		export interface Event {
 			channel: Channel;
-			user: User;
 			message: UserMessage;
 			milestone: {
 				category: TagsData['msgParamCategory'];
 				id: TagsData['msgParamId'];
 				value: TagsData['msgParamValue'];
 			};
+			user: User;
 		}
 	}
 }

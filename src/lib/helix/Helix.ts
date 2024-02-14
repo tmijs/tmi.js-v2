@@ -1,12 +1,12 @@
 export interface HelixUser {
+	broadcaster_type: '' | 'affiliate' | 'partner';
+	created_at: string;
+	description: string;
+	display_name: string;
+	email?: string;
 	id: string;
 	login: string;
-	display_name: string;
-	type: 'admin' | 'global_mod' | 'staff' | '';
-	broadcaster_type: 'partner' | 'affiliate' | '';
-	description: string;
-	profile_image_url: string;
 	offline_image_url: string;
-	email?: string;
-	created_at: string;
+	profile_image_url: string;
+	type: '' | 'admin' | 'global_mod' | 'staff';
 }

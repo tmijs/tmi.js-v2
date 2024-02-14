@@ -1,10 +1,10 @@
-// @ts-check
-
-import { build } from 'esbuild';
-import { replace } from 'esbuild-plugin-replace';
-import pkg from '../package.json' with { type: 'json' };
-import esbuildPkg from 'esbuild/package.json' with { type: 'json' };
 import os from 'node:os';
+import process from 'node:process';
+import type { BuildOptions } from 'esbuild';
+import { build } from 'esbuild';
+import esbuildPkg from 'esbuild/package.json' with { type: 'json' };
+import { esbuildPluginVersionInjector } from 'esbuild-plugin-version-injector';
+import pkg from '../package.json' with { type: 'json' };
 
 console.table([
 	{ '': 'tmi.js', version: pkg.version },
@@ -15,9 +15,6 @@ console.table([
 
 const entryFile = 'src/index.ts';
 
-/**
- * @type {import('esbuild').BuildOptions}
- */
 const optionsAll = {
 	bundle: true,
 	sourcemap: true,
@@ -25,114 +22,88 @@ const optionsAll = {
 	target: 'es2022',
 	tsconfig: 'tsconfig.json',
 	outdir: 'dist',
-	plugins: [
-		replace({
-			include: /\.ts$/,
-			values: {
-				'process.env.npm_package_version': JSON.stringify(pkg.version),
-			},
-		})
-	]
-};
+	plugins: [esbuildPluginVersionInjector()],
+} as const satisfies BuildOptions;
 
-/**
- * @type {import('esbuild').BuildOptions}
- */
 const optionsEsm = {
 	format: 'esm',
 	outExtension: { '.js': '.mjs' },
-};
+} as const satisfies BuildOptions;
 
-/**
- * @type {import('esbuild').BuildOptions}
- */
 const optionsGlobal = {
 	format: 'iife',
 	globalName: 'tmi',
-};
+} as const satisfies BuildOptions;
 
-/**
- * @type {import('esbuild').BuildOptions}
- */
 const optionsNode = {
 	platform: 'node',
 	entryPoints: { 'tmi.node': entryFile },
 	packages: 'external',
 	minifySyntax: true,
 	minifyIdentifiers: true,
-};
+} as const satisfies BuildOptions;
 
-/**
- * @type {import('esbuild').BuildOptions}
- */
 const optionsBrowser = {
 	platform: 'browser',
-};
+} as const satisfies BuildOptions;
 
-/**
- * @type {Record<string, import('esbuild').BuildOptions>}
- */
 const optionsList = {
 	node_esm: {
 		...optionsEsm,
-		...optionsNode
+		...optionsNode,
 	},
 	node_cjs: {
 		outExtension: { '.js': '.cjs' },
 		format: 'cjs',
-		...optionsNode
+		...optionsNode,
 	},
 	browser_esm: {
 		entryPoints: { 'tmi.esm-browser': entryFile },
 		...optionsBrowser,
-		...optionsEsm
+		...optionsEsm,
 	},
 	browser_esm_min: {
 		entryPoints: { 'tmi.esm-browser.min': entryFile },
 		minify: true,
 		...optionsBrowser,
-		...optionsEsm
+		...optionsEsm,
 	},
 	browser_global: {
 		entryPoints: { 'tmi.global-browser': entryFile },
-		format: 'iife',
 		...optionsBrowser,
-		...optionsGlobal
+		...optionsGlobal,
 	},
 	browser_global_min: {
 		entryPoints: { 'tmi.global-browser.min': entryFile },
-		format: 'iife',
 		minify: true,
 		...optionsBrowser,
-		...optionsGlobal
+		...optionsGlobal,
 	},
-};
+} as const satisfies Record<string, BuildOptions>;
 
 const args = process.argv.slice(2);
-const optionsSelected = optionsList[args[0]];
-if(!optionsSelected && args.length) {
+const optionsSelected = optionsList[args[0] as keyof typeof optionsList] as BuildOptions | undefined;
+if (!optionsSelected && args.length) {
 	console.error('Valid options: ' + Object.keys(optionsList).join(', '));
 	process.exit(1);
-}
-else if(optionsSelected) {
-	makeBuild(args[0], optionsSelected).catch(handleBuildError);
-}
-else {
+} else if (optionsSelected) {
+	await makeBuild(args[0], optionsSelected).catch(handleBuildError);
+} else {
 	console.time('Build all');
-	await Promise.all(Object.entries(optionsList).map(([ name, options ]) =>
-		makeBuild(name, options).catch(handleBuildError)
-	));
+	await Promise.all(
+		Object.entries(optionsList).map(async ([name, options]) => makeBuild(name, options).catch(handleBuildError)),
+	);
 	console.timeEnd('Build all');
 }
 
-async function makeBuild(name, options) {
+async function makeBuild(name: string, options: BuildOptions) {
 	const logLine = `- ${name}`;
 	console.time(logLine);
 	await build({ ...optionsAll, ...options });
 	console.timeEnd(logLine);
 }
 
-function handleBuildError(err) {
+function handleBuildError(err: unknown) {
 	console.error(err);
 	process.exit(1);
 }

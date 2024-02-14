@@ -1,78 +1,85 @@
 // TODO: Add more meaningful descriptions to each level
 export enum LogLevel {
-	/** Log everything */
+	/* Log everything */
 	Trace = 0,
-	/** Log debug messages and above */
+	/* Log debug messages and above */
 	Debug = 1,
-	/** Log verbose messages and above */
+	/* Log verbose messages and above */
 	Verbose = 2,
-	/** Log info messages and above */
+	/* Log info messages and above */
 	Info = 3,
-	/** Log warning messages and above */
+	/* Log warning messages and above */
 	Warn = 4,
-	/** Log error messages and above */
+	/* Log error messages and above */
 	Error = 5,
-	/** Log fatal messages only */
+	/* Log fatal messages only */
 	Fatal = 6,
 }
 
 export class Logger {
-	static LogLevel: typeof LogLevel = LogLevel;
+	public static LogLevel: typeof LogLevel = LogLevel;
 
 	private level: number = LogLevel.Error;
 
-	private prefix: string = `tmi.js@${process.env.npm_package_version}`;
+	private prefix: string = `tmi.js@[VI]{{inject}}[/VI]`;
 
-	constructor(level?: LogLevel) {
-		if(level !== undefined) {
+	public constructor(level?: LogLevel) {
+		if (level !== undefined) {
 			this.setLevel(level);
 		}
 	}
-	getLevel() {
+
+	public getLevel() {
 		return this.level;
 	}
-	setLevel(level: LogLevel) {
+
+	public setLevel(level: LogLevel) {
 		this.level = level;
 	}
 
 	private getTime() {
 		const now = new Date();
-		const parts = [ now.getHours(), now.getMinutes(), now.getSeconds() ];
-		return `[${parts.map(n => n.toString().padStart(2, '0')).join(':')}]`;
+		const parts = [now.getHours(), now.getMinutes(), now.getSeconds()];
+		return `[${parts.map((num) => num.toString().padStart(2, '0')).join(':')}]`;
 	}
 
 	private log(level: LogLevel, ...args: any[]) {
-		if(level >= this.level) {
+		if (level >= this.level) {
 			const timestamp = this.getTime();
-			const p = `${timestamp} ${this.prefix} ${LogLevel[level]}:`;
-			if(level === LogLevel.Error) {
-				console.error(p, ...args);
-			}
-			else {
-				console.log(p, ...args);
+			const prefix = `${timestamp} ${this.prefix} ${LogLevel[level]}:`;
+			if (level === LogLevel.Error) {
+				console.error(prefix, ...args);
+			} else {
+				console.log(prefix, ...args);
 			}
 		}
 	}
 
-	trace(...args: any[]) {
+	public trace(...args: any[]) {
 		this.log(LogLevel.Trace, ...args);
 	}
-	debug(...args: any[]) {
+
+	public debug(...args: any[]) {
 		this.log(LogLevel.Debug, ...args);
 	}
-	verbose(...args: any[]) {
+
+	public verbose(...args: any[]) {
 		this.log(LogLevel.Verbose, ...args);
 	}
-	info(...args: any[]) {
+
+	public info(...args: any[]) {
 		this.log(LogLevel.Info, ...args);
 	}
-	warn(...args: any[]) {
+
+	public warn(...args: any[]) {
 		this.log(LogLevel.Warn, ...args);
 	}
-	error(...args: any[]) {
+
+	public error(...args: any[]) {
 		this.log(LogLevel.Error, ...args);
 	}
-	fatal(...args: any[]) {
+
+	public fatal(...args: any[]) {
 		this.log(LogLevel.Fatal, ...args);
 	}
 }

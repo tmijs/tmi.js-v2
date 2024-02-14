@@ -7,9 +7,10 @@ export type TagsDataType = Record<string, any>;
 
 export type ITags<TagsData extends TagsDataType> = {
 	[Key in keyof TagsData]: TagsData[Key];
-}
+};
 
 export type IrcCommands =
+	// eslint-disable-next-line @typescript-eslint/sort-type-constituents
 	| '001'
 	| '002'
 	| '003'
@@ -39,13 +40,13 @@ export type IrcCommands =
 
 export interface IrcMessage<
 	Command extends IrcCommands = IrcCommands,
-	TagsData extends TagsDataType | null = TagsDataType
+	TagsData extends TagsDataType | null = TagsDataType,
 > {
-	raw: string;
-	prefix: Record<'nick' | 'user' | 'host', string | undefined>;
-	command: Command;
 	channel?: ChannelString;
+	command: Command;
 	params: string[];
+	prefix: Record<'host' | 'nick' | 'user', string | undefined>;
+	raw: string;
 	rawTags: Record<string, string>;
 	tags: TagsData extends TagsDataType ? ITags<TagsData> : null;
 	unknownTags?: Map<string, string>;
